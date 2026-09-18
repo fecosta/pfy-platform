@@ -11,55 +11,236 @@ resources/specs/
 └── planned/
 ```
 
+## Authority
+
+Specifications implement bounded slices of the current product and architecture contracts.
+
+The roadmap does not override:
+
+- `docs/PRODUCT_DEFINITION.md`;
+- `docs/ARCHITECTURE.md`;
+- accepted ADRs.
+
+A SPEC must be reconciled with current authoritative documentation before activation.
+
+The approved UX prototype may guide implementation of visual/interaction intent but does not override the active SPEC or authoritative domain/architecture contracts.
+
 ## Lifecycle
 
 ### Planned
 
-`planned/` contains accepted future work that is not yet ready for implementation.
+`planned/` contains accepted future bounded work that is not currently active.
 
-A planned item may still need product decisions, architecture decisions, data-contract clarification, authorization/security design, migration investigation, acceptance criteria, or dependency completion.
+A planned item may still require:
 
-Do not implement directly from a planned spec.
+- product decisions;
+- architecture decisions;
+- data-contract clarification;
+- authorization/security design;
+- migration investigation;
+- acceptance criteria;
+- dependency completion.
+
+Do not implement directly from a planned SPEC.
 
 ### Active
 
 `active/` contains current implementation-ready work.
 
-An active spec must provide enough clarity that the implementation agent does not need to invent product behavior.
+An active SPEC must provide enough clarity that the implementation agent does not need to invent product behavior.
 
-At minimum it should define objective, current state, decision, scope, constraints, expected behavior, acceptance criteria, implementation freedom, required knowledge updates, and blockers if any.
+At minimum it should define:
+
+- objective;
+- current state and gap;
+- authoritative decision;
+- in-scope and out-of-scope boundaries;
+- expected behavior;
+- meaningful constraints;
+- impact surface;
+- observable acceptance criteria;
+- implementation freedom;
+- required knowledge updates;
+- unresolved blockers.
 
 Prefer one primary active implementation unit at a time unless parallel work is intentionally independent.
 
 ### Completed
 
-`completed/` contains implemented work whose implementation, validation and project knowledge have been reconciled.
+`completed/` contains implemented work whose implementation, validation and durable project knowledge have been reconciled.
 
-Moving a spec to completed requires more than code merge. Verify acceptance criteria, tests/checks, security/data implications, authoritative documentation and lifecycle/status references.
+Moving a SPEC to completed requires more than code merge.
+
+Verify:
+
+- acceptance criteria;
+- tests/checks;
+- security/data implications;
+- authoritative documentation;
+- lifecycle/status references;
+- current-state accuracy.
 
 ## Current state
 
 ### Active
 
-- `001-application-foundation.md` — establish the initial application and engineering foundation.
+- **SPEC-001 — Application Foundation**
+  - `active/001-application-foundation.md`
+  - Establish the initial application and engineering foundation.
+  - Does not implement PFY learning-domain behavior.
 
 ### Planned roadmap
 
-The current roadmap is provisional and may change as implementation evidence emerges:
+The dependency-oriented planned roadmap is:
 
-- SPEC-002 — Identity & Authentication
-- SPEC-003 — Authorization Foundation
-- SPEC-004 — Learning Content Model & Library
-- SPEC-005 — H5P Runtime Integration
-- SPEC-006 — H5P Authoring
-- SPEC-007 — Attempts & Results
-- SPEC-008 — Teacher-Student Relationship
-- SPEC-009 — Licensing & Entitlements
-- SPEC-010 — Organizations & Institutional Access
-- SPEC-011 — B2C Billing
-- SPEC-012 — Legacy User Migration
-- SPEC-013 — Legacy H5P Migration
+1. **SPEC-002 — Identity & Authentication**
+2. **SPEC-003 — Authorization Foundation**
+3. **SPEC-004 — Learning Content Model, Percursos & Shared Library**
+4. **SPEC-005 — H5P Runtime Production Integration**
+5. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
+6. **SPEC-007 — Activity Authoring & H5P Content Workflow**
+7. **SPEC-008 — Teacher–Student Relationships & Monitoring**
+8. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
+9. **SPEC-010 — Organizations & Institutional Access**
+10. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
+11. **SPEC-012 — B2C Billing Integration**
+12. **SPEC-013 — Legacy User Migration**
+13. **SPEC-014 — Legacy Learning Content Migration**
+14. **SPEC-015 — Optional Historical Learning Data Migration**
 
-Only SPEC-001 is currently implementation-ready.
+Only SPEC-001 is currently active and implementation-ready.
 
-The roadmap does not override `docs/PRODUCT_DEFINITION_v1.md`, `docs/ARCHITECTURE_v1.md` or accepted ADRs.
+Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
+
+## Learning-domain reconciliation required before activation
+
+The existing planned learning-domain SPECs were drafted before the composed Activity model was finalized.
+
+Before activation, reconcile at least:
+
+### SPEC-004
+
+Must own:
+
+- canonical Activity identity;
+- ordered Activity composition;
+- Exercise identity;
+- Syllabus/Percurso;
+- ordered Activity membership;
+- shared library behavior;
+- content lifecycle and basic discovery metadata.
+
+It must not treat `ActivityCollection`/`Textbook` as the central MVP pedagogical model unless explicitly re-approved.
+
+### SPEC-005
+
+Must integrate H5P as an Exercise implementation.
+
+Authoritative mapping:
+
+```text
+PFY Exercise UUID
+        ↕
+PFY H5P Adapter
+        ↕
+Lumi content id
+```
+
+It must not restore one Activity = one H5P content.
+
+### SPEC-006
+
+Must move Attempts from Activity-level execution to Exercise-level execution and define:
+
+- append-only Exercise Attempts;
+- Result semantics;
+- Activity Progress;
+- Activity Completion;
+- Activity Performance;
+- `needs_review`;
+- learner own-history;
+- relevant derived summaries.
+
+### SPEC-007
+
+Must treat authoring as composed Activity authoring.
+
+Lumi remains the editor for H5P-backed Exercise blocks rather than the full Activity editor.
+
+### SPEC-008
+
+Must preserve relationship authorization while exposing canonical learning history, including Activity completion, Exercise evidence, Activity Performance and Percurso progress where applicable.
+
+Formal assignments remain out of scope unless separately approved.
+
+### SPEC-014
+
+Must no longer assume migrating an H5P package creates a complete PFY Activity.
+
+It must distinguish:
+
+- H5P/Exercise migration;
+- Activity-composition migration;
+- Syllabus/Percurso migration.
+
+Legacy Activity-composition migration remains a product/technical decision gate.
+
+## Known decision gates
+
+The roadmap contains known unresolved gates, including:
+
+- launch authentication UX details;
+- GPL production implications for Lumi;
+- raw xAPI retention if retained;
+- Activity-authoring usability validation;
+- B2C downgrade allocation policy;
+- PFY Admin organization-management minimum capability;
+- institutional reporting metrics/privacy details;
+- payment provider and billing lifecycle rules;
+- legacy user source inventory;
+- legacy Activity-composition migration strategy;
+- legacy Syllabus/Percurso migration strategy;
+- optional historical-learning migration value/cost decision.
+
+A downstream implementation agent must not resolve these silently.
+
+## Source-of-truth rule
+
+If a planned SPEC conflicts with current authoritative product or architecture documentation, the planned SPEC is stale and must be reconciled before activation.
+
+Do not implement the stale interpretation.
+
+If reconciliation requires a new product decision, keep the SPEC planned and mark:
+
+`DECISION REQUIRED`
+
+If a technical investigation is needed before the contract can be finalized, mark:
+
+`TECHNICAL INVESTIGATION REQUIRED`
+
+## Lifecycle transition gate
+
+A SPEC may move from planned to active only when:
+
+```text
+dependencies satisfied
++ product decisions explicit
++ architecture coherent
++ security/authorization constraints explicit
++ data semantics explicit
++ acceptance criteria observable
++ implementation freedom bounded
++ no unresolved blocker that would require implementation invention
+= IMPLEMENTATION READY
+```
+
+A SPEC may move to completed only when:
+
+```text
+implementation
++ validation
++ security/data verification
++ documentation reconciliation
++ lifecycle/index reconciliation
+= completed
+```

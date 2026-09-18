@@ -9,10 +9,15 @@ Before implementation, read the smallest relevant authoritative set.
 Always begin with:
 
 1. `README.md`
-2. `docs/PRODUCT_DEFINITION_v1.md`
-3. `docs/ARCHITECTURE_v1.md`
-4. relevant ADRs under `docs/`
+2. `docs/PRODUCT_DEFINITION.md`
+3. `docs/ARCHITECTURE.md`
+4. relevant accepted ADRs under `docs/`
 5. the active specification under `resources/specs/active/`
+
+For learning/H5P work, explicitly include:
+
+- `docs/ADR-001-LUMI-H5P-RUNTIME.md`
+- `docs/ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md`
 
 As the repository grows, also inspect the relevant schema, migrations, security rules, tests and module-level documentation before editing.
 
@@ -20,57 +25,201 @@ Do not rely on conversation history when the repository contains current authori
 
 ## 2. Source-of-truth hierarchy
 
-Use the following hierarchy:
+For intended product behavior, use this hierarchy:
 
-- current implementation and tests describe what exists now;
-- approved product documentation describes intended product behavior;
-- accepted ADRs describe architecture decisions;
-- active specifications define bounded implementation work;
-- completed specifications preserve implementation history;
-- planned specifications are future work and must not be treated as current behavior.
+```text
+approved product decisions
+        ↓
+docs/PRODUCT_DEFINITION.md
+        ↓
+accepted ADRs / docs/ARCHITECTURE.md
+        ↓
+active specification
+        ↓
+implementation prompt
+        ↓
+approved UX prototype
+        ↓
+implementation convenience
+```
 
-If these conflict, surface the contradiction. Do not silently choose whichever is easiest to implement.
+Current implementation and tests remain authoritative for claims about what actually exists now.
 
-## 3. Product coherence
+Completed specifications preserve implementation history.
+
+Planned specifications describe future bounded work and must not be treated as current behavior or direct implementation instructions.
+
+If sources conflict, surface the contradiction.
+
+Do not silently choose whichever interpretation is easiest to implement.
+
+## 3. Prototype authority boundary
+
+The approved PFY prototype is a UX/UI reference.
+
+It may guide:
+
+- visual direction;
+- information hierarchy;
+- navigation;
+- interaction intent;
+- represented user-facing states.
+
+It does not define:
+
+- database schema;
+- authorization;
+- security;
+- domain invariants;
+- migration semantics;
+- API contracts;
+- exact metric formulas beyond approved product contracts;
+- unrepresented edge cases.
+
+Mock data does not establish product semantics.
+
+If the prototype conflicts with authoritative documentation or the active SPEC, do not implement the prototype contradiction.
+
+If resolving the conflict requires changing an approved product contract, return:
+
+`BLOCKED / DECISION REQUIRED`
+
+## 4. Product coherence
 
 PFY is a greenfield rebuild.
 
-Do not recreate WordPress/plugin architecture unless a specification explicitly requires compatibility behavior.
+Do not recreate WordPress/plugin architecture unless a specification explicitly requires compatibility or migration behavior.
 
 Preserve these approved product principles:
 
-- Activity is the fundamental learning-content unit.
-- Student and teacher share the same library with different permissions.
+- Activity is the canonical learning-content unit.
+- Activity is composed from ordered heterogeneous content blocks.
+- Exercise is the interactive Attempt-producing unit.
+- H5P implements Exercises; H5P is not the PFY Activity domain model.
+- PFY Exercise UUIDs remain canonical over Lumi content IDs.
+- Syllabus is a first-class pedagogical concept presented to users as Percurso.
+- Activity can exist independently and may participate in multiple Percursos without duplication.
+- Students and Teachers share the same canonical learning content.
+- Teacher-mediated synchronous learning and independent learning use the same Activity Learning Workspace.
 - Teacher-student relationships are independent from payment lifecycle.
-- Access is represented through entitlements rather than by coupling learning directly to billing.
+- Access is represented through entitlements rather than coupling learning directly to billing.
 - Users may belong to multiple organizations.
 - Authorization is relationship-aware and must not depend solely on a global role.
-- H5P is an implementation of Activity, not the PFY product domain.
-- Learning Attempts are append-only.
-- Non-scoring activity completion is valid and must not be represented as score zero.
+- Exercise Attempts are append-only.
+- Missing score is never converted to zero.
+- Activity Completion is independent from score.
+- Activity Performance is separate from Activity Completion.
+- `needs_review` is pedagogical attention, not failure, blocking or automatic remediation.
+- Percurso progress derives from Activity completion, not score averages.
 - H5P scores are `client_reported`, not server-authoritative.
 - Identity visibility and learning-data visibility are distinct permissions.
+- Formal assignments, CEFR mastery metrics and advanced competency analytics are not current MVP contracts unless a later SPEC explicitly promotes them.
 
-## 4. Architecture constraints
+## 5. Learning semantics
 
-The approved architecture is described in `docs/ARCHITECTURE_v1.md`.
+### Activity composition
+
+Do not hardcode one global Activity content sequence.
+
+An Activity may contain an ordered combination of editorial, reflection, image, video, infographic, embed and Exercise blocks.
+
+Pedagogical patterns such as “Bora entender?” are content patterns, not mandatory system stages.
+
+### Exercise and H5P
+
+H5P-backed interactive content belongs to a canonical PFY Exercise.
+
+Do not restore a direct one-to-one domain mapping:
+
+```text
+PFY Activity UUID <-> Lumi content id
+```
+
+The current boundary is:
+
+```text
+PFY Exercise UUID <-> Lumi content id
+```
+
+through the PFY H5P Adapter.
+
+### Attempts
+
+Attempts attach to Exercises.
+
+A new learner execution creates a new Attempt.
+
+Do not overwrite previous completed Attempts to represent repetition.
+
+### Activity completion
+
+Current rule:
+
+```text
+Activity completed
+=
+all required Exercises completed
+```
+
+Score does not determine completion.
+
+Do not create artificial completion requirements for passive editorial/media blocks.
+
+### Activity performance
+
+Use the latest completed Attempt for current Exercise performance.
+
+Current approved Activity attention rule:
+
+```text
+needs_review
+=
+50% or more of scorable Exercises
+have latest completed score < 50%
+```
+
+`needs_review` must not:
+
+- make the Activity incomplete;
+- block Percurso progress;
+- change learner level;
+- automatically assign remediation;
+- become an Activity grade.
+
+### Percurso progress
+
+Current rule:
+
+```text
+completed applicable Activities
+/
+total applicable Activities
+```
+
+Do not derive Percurso progress from Exercise score averages.
+
+## 6. Architecture constraints
+
+The approved architecture is described in `docs/ARCHITECTURE.md`.
 
 Key constraints include:
 
 - Next.js + TypeScript for the primary application;
-- PostgreSQL/Supabase as the system of record/platform;
+- PostgreSQL/Supabase as system of record/platform;
 - Supabase Auth linked to application-owned user/profile tables;
 - server-side relational authorization plus RLS for critical database boundaries;
 - Lumi H5P in a separate Node process/service;
-- PFY-owned H5P adapter between the product domain and Lumi;
+- PFY-owned H5P adapter between Exercise domain state and Lumi;
 - PFY UUIDs remain canonical identifiers;
 - Lumi content IDs remain runtime/internal identifiers;
-- imported H5P content must pass the required security/sanitization pipeline;
+- imported H5P content must pass the required sanitization/security pipeline;
 - H5P library installation is a privileged operator/admin action.
 
 Do not collapse the H5P runtime into the main PFY application process without an explicit architecture decision superseding ADR-001.
 
-## 5. Specification workflow
+Do not collapse Activity composition into the H5P runtime.
+
+## 7. Specification workflow
 
 Specifications live at:
 
@@ -89,30 +238,41 @@ planned -> active -> completed
 
 Do not implement work directly from `planned/`.
 
-A spec should move to `active/` only when it is implementation-ready and does not require the coding agent to invent product behavior.
+A SPEC should move to `active/` only when it is implementation-ready and does not require the coding agent to invent product behavior.
+
+Before activation, verify that the SPEC is reconciled with the current:
+
+- Product Definition;
+- Architecture;
+- ADRs;
+- dependency state;
+- relevant UX reference.
 
 After implementation and validation:
 
 1. reconcile authoritative documentation;
 2. ensure no current-state docs are stale;
-3. move the spec to `completed/`;
-4. update the spec status and closure evidence;
-5. correct stale references in `resources/specs/README.md` or other project indexes.
+3. move the SPEC to `completed/`;
+4. update status and closure evidence;
+5. correct stale references in `resources/specs/README.md` and other indexes.
 
 A merged change is not automatically complete if durable project knowledge remains inconsistent.
 
-## 6. Scope discipline
+## 8. Scope discipline
 
-Implement the active spec, not adjacent future work.
+Implement the active SPEC, not adjacent future work.
 
 Do not opportunistically add:
 
 - unrelated refactors;
 - speculative abstractions;
 - future-spec functionality;
-- billing logic before its spec;
-- H5P integration before its spec;
-- organization/access behavior not authorized by the current spec.
+- billing logic before its SPEC;
+- H5P integration before its SPEC;
+- organizations/access behavior not authorized by the current SPEC;
+- formal assignment workflows unless explicitly in scope;
+- CEFR mastery or unsupported competency metrics;
+- AI recommendations/remediation without an explicit product decision.
 
 Prefer the smallest coherent implementation.
 
@@ -120,9 +280,15 @@ If a technical issue requires changing an approved product or architecture contr
 
 `BLOCKED / DECISION REQUIRED`
 
-Include the verified constraint, affected contract, options, recommended decision and implementation impact.
+Include:
 
-## 7. Security
+- verified constraint;
+- affected contract;
+- options;
+- recommended decision;
+- implementation impact.
+
+## 9. Security
 
 Security rules are product contracts where they affect access or privacy.
 
@@ -130,15 +296,15 @@ At minimum:
 
 - do not bypass RLS or authorization merely to make tests pass;
 - do not expose service-role credentials to the browser;
-- do not trust client-provided user/attempt identifiers for authorization;
+- do not trust client-provided user/Attempt identifiers for authorization;
 - do not weaken H5P import sanitization;
 - treat H5P libraries as executable code;
-- do not expose institutional identity data when the reporting policy permits only pseudonymous learning data;
+- do not expose institutional identity data when policy permits only pseudonymous learning data;
 - never commit secrets, credentials, tokens or production data.
 
 Security-sensitive changes require focused tests.
 
-## 8. Data and migrations
+## 10. Data and migrations
 
 Database changes must be explicit, reviewable and reversible where reasonably possible.
 
@@ -152,7 +318,13 @@ For migrations:
 
 Legacy WordPress data is migration input, not the new PFY data model.
 
-## 9. Testing and validation
+Do not assume migrating `.h5p` packages alone reconstructs complete PFY Activities.
+
+The legacy Activity-composition migration strategy remains a decision gate until explicitly resolved.
+
+Legacy Syllabus/Percurso migration also requires explicit mapping/reconciliation.
+
+## 11. Testing and validation
 
 Discover and use the repository's actual validation commands.
 
@@ -160,7 +332,7 @@ For each implementation:
 
 - add focused tests for changed behavior;
 - run relevant broader checks when practical;
-- run formatting/lint/type-check/build checks established by the repository;
+- run established formatting/lint/type-check/build checks;
 - do not claim a check was run if it was not;
 - distinguish automated validation from manual validation.
 
@@ -168,7 +340,16 @@ Browser-visible behavior should receive browser-level validation when appropriat
 
 Authorization and RLS changes require explicit positive and negative access tests.
 
-## 10. Git and authorship
+Learning semantics require focused tests when applicable, including:
+
+- append-only Attempt behavior;
+- non-scoring completion;
+- Activity completion derivation;
+- Activity Performance calculation;
+- Percurso progress derivation;
+- relationship-scoped teacher access.
+
+## 12. Git and authorship
 
 Use Conventional Commits:
 
@@ -187,7 +368,7 @@ Do not force-push, rewrite shared history, reset destructive state or bypass rep
 
 Preserve unrelated work.
 
-## 11. Final implementation report
+## 13. Final implementation report
 
 When completing a bounded implementation, report:
 
@@ -200,7 +381,7 @@ When completing a bounded implementation, report:
 7. tests/checks actually run and results;
 8. checks not run;
 9. unresolved risks;
-10. documentation/spec reconciliation performed;
+10. documentation/SPEC reconciliation performed;
 11. recommended next step.
 
 Do not mark work complete solely because code compiles or tests pass.
