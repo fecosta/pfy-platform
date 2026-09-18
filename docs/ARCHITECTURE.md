@@ -3,8 +3,8 @@
 **Status:** DECISION READY — ARCHITECTURE v2  
 **Date:** 2026-09-18  
 **Architecture style:** modular web application with isolated H5P runtime  
-**Supersedes:** `ARCHITECTURE_v1.md` for current architecture intent  
-**Related:** `PRODUCT_DEFINITION_v2.md`, `ADR-001-LUMI-H5P-RUNTIME.md`, `ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md`
+**Supersedes:** `ARCHITECTURE.md` for current architecture intent  
+**Related:** `PRODUCT_DEFINITION.md`, `ADR-001-LUMI-H5P-RUNTIME.md`, `ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md`
 
 ## 1. Objective
 

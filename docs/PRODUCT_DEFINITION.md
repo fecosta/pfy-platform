@@ -3,7 +3,7 @@
 **Status:** DECISION READY — PRODUCT DEFINITION v2  
 **Product:** Portuguese for You (PFY)  
 **Project type:** greenfield rebuild with selective legacy migration  
-**Supersedes:** `PRODUCT_DEFINITION_v1.md` for current product intent  
+**Supersedes:** `PRODUCT_DEFINITION.md` for current product intent  
 **UX reference:** approved PFY navigable prototype, where consistent with this document
 
 ## 1. Product vision

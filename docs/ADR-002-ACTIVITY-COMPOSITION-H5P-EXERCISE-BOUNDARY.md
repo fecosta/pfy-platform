@@ -3,7 +3,7 @@
 **Status:** ACCEPTED  
 **Date:** 2026-09-18  
 **Decision type:** Product-domain / architecture boundary  
-**Related:** `ADR-001-LUMI-H5P-RUNTIME.md`, `PRODUCT_DEFINITION_v2.md`, `ARCHITECTURE_v2.md`
+**Related:** `ADR-001-LUMI-H5P-RUNTIME.md`, `PRODUCT_DEFINITION.md`, `ARCHITECTURE.md`
 
 ## Context
 
