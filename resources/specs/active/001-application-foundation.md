@@ -1,9 +1,9 @@
 # SPEC-001 — Application Foundation
 
 **Status:** ACTIVE — IMPLEMENTATION READY  
-**Depends on:** Product Definition v1, Architecture v1  
+**Depends on:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`  
 **Does not depend on:** H5P runtime implementation, billing, organizations, teacher-student relationships, legacy migration  
-**Authority:** approved PFY Product Definition v1 and Architecture v1
+**Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and applicable accepted ADRs
 
 ## 1. Objective
 
@@ -363,7 +363,7 @@ before implementing the deviation.
 At completion:
 
 1. update root `README.md` with actual setup and validation commands;
-2. update `docs/ARCHITECTURE_v1.md` only if implementation establishes a reversible detail worth recording as verified current state;
+2. update `docs/ARCHITECTURE.md` only if implementation establishes a durable architecture detail that materially changes or clarifies the authoritative current architecture;
 3. do not create a new ADR for ordinary foundation choices unless a material architecture decision is required;
 4. update `resources/specs/README.md`;
 5. change this spec status to completed and move it to `resources/specs/completed/` only after validation and documentation reconciliation.
@@ -376,7 +376,7 @@ There are no known product blockers to begin SPEC-001.
 
 Implementation should verify current stable package versions and compatibility at execution time rather than relying on stale assumptions.
 
-If the chosen Next.js/Supabase baseline exposes a material conflict with Architecture v1, stop and return `BLOCKED / DECISION REQUIRED`.
+If the chosen Next.js/Supabase baseline exposes a material conflict with `docs/ARCHITECTURE.md` or an accepted ADR, stop and return `BLOCKED / DECISION REQUIRED`.
 
 ## Completion gate
 
