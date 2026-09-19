@@ -25,6 +25,8 @@ A SPEC must be reconciled with current authoritative documentation before activa
 
 The approved UX prototype may guide implementation of visual/interaction intent but does not override the active SPEC or authoritative domain/architecture contracts.
 
+The prototype is versioned under `resources/ux/`. Its known conflicts and the product decisions it surfaces are recorded in `resources/ux/PROTOTYPE-CONFLICTS.md` and must not become requirements automatically.
+
 ## Lifecycle
 
 ### Planned
@@ -114,9 +116,22 @@ Planned SPEC filenames may retain their current names until individually reconci
 
 ## Learning-domain reconciliation required before activation
 
-The existing planned learning-domain SPECs were drafted before the composed Activity model was finalized.
+Several planned learning-domain SPECs were drafted before the composed Activity model was finalized.
 
-Before activation, reconcile at least:
+### Reconciliation status (2026-09-19)
+
+| SPEC | State |
+|---|---|
+| SPEC-004 | Reconciled with ADR-002 in its planned file; open decisions listed in its §17 (including Exercise scoreability) must be re-checked at activation. |
+| SPEC-005 | Reconciled with ADR-002 in its planned file. |
+| SPEC-006 | Reconciled with ADR-002 in its planned file; activation blocked by `DECISION REQUIRED` items (Activity Performance `adequate`/`attention` aggregation; Exercise scoreability / assessment semantics). |
+| SPEC-007 | Stale one-Activity-to-one-H5P wording corrected; full reconciliation still required. |
+| SPEC-008 | Learning-history wording aligned with canonical evidence layers; full reconciliation still required. |
+| SPEC-014 | Stale H5P-to-Activity mapping corrected to H5P-to-Exercise; full reconciliation still required; Activity-composition and Syllabus/Percurso migration remain `DECISION REQUIRED`. |
+
+The remaining planned SPECs (002, 003, 009–013, 015) had only their authority references updated to the current canonical documents; SPEC-002 additionally records related open decisions in its §12.
+
+Before activation, the contracts below must hold:
 
 ### SPEC-004
 
@@ -192,6 +207,9 @@ The roadmap contains known unresolved gates, including:
 - launch authentication UX details;
 - GPL production implications for Lumi;
 - raw xAPI retention if retained;
+- Activity Performance `adequate`/`attention` aggregation;
+- Exercise scoreability / assessment semantics (must not be inferred from existing Attempts);
+- authoring review/approval workflow and editing of published content with existing Attempts;
 - Activity-authoring usability validation;
 - B2C downgrade allocation policy;
 - PFY Admin organization-management minimum capability;
@@ -200,7 +218,8 @@ The roadmap contains known unresolved gates, including:
 - legacy user source inventory;
 - legacy Activity-composition migration strategy;
 - legacy Syllabus/Percurso migration strategy;
-- optional historical-learning migration value/cost decision.
+- optional historical-learning migration value/cost decision;
+- product decisions surfaced by the UX prototype (independent learner access model, learner level, written reflection input, "Minha biblioteca" semantics, current Percurso semantics, teacher student grouping and teacher information architecture), recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`.
 
 A downstream implementation agent must not resolve these silently.
 

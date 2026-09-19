@@ -2,7 +2,7 @@
 
 **Status:** PLANNED — DECISION READY  
 **Depends on:** SPEC-001  
-**Authority:** Product Definition v1, Architecture v1 and applicable ADRs
+**Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and applicable accepted ADRs
 
 ## 1. Purpose / Objective
 
@@ -10,7 +10,7 @@ Implement PFY identity and authentication on Supabase Auth while keeping authent
 
 ## 2. Current State
 
-Architecture v1 selects Supabase Auth and requires PFY domain users to live in application-owned tables linked to authentication identities. Legacy WordPress password hashes are outside the new domain.
+The current architecture (`docs/ARCHITECTURE.md`) selects Supabase Auth and requires PFY domain users to live in application-owned tables linked to authentication identities. Legacy WordPress password hashes are outside the new domain.
 
 ## 3. Problem / Gap
 
@@ -76,3 +76,8 @@ Update current-state architecture/auth docs with verified methods, schema and va
 ## 12. Open Questions / Blockers
 
 Before activation, confirm launch authentication UX (magic link/password/reset combination) and whether social login is MVP.
+
+Also unresolved and relevant to this SPEC's surfaces (recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`; do not implement from the prototype):
+
+- `DECISION REQUIRED — INDEPENDENT LEARNER ACCESS MODEL` (UXC-18): whether and how a learner without a Teacher or Organization can self-register and obtain access;
+- `DECISION REQUIRED — LEARNER LEVEL` (UXC-06): whether a learner profile carries a level and what its source is.

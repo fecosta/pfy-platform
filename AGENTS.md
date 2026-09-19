@@ -57,6 +57,8 @@ Do not silently choose whichever interpretation is easiest to implement.
 
 The approved PFY prototype is a UX/UI reference.
 
+It is versioned under `resources/ux/prototype/`. Before using it, read `resources/ux/README.md` and `resources/ux/PROTOTYPE-CONFLICTS.md`. Do not implement prototype concepts that the register classifies as `CONFLICT`, `UNDEFINED` or `DECISION REQUIRED`, and treat items classified as `PROPOSAL` as input to a pending decision only.
+
 It may guide:
 
 - visual direction;

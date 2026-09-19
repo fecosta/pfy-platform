@@ -2,7 +2,7 @@
 
 **Status:** PLANNED — TECHNICAL INVESTIGATION REQUIRED  
 **Depends on:** SPEC-002, SPEC-008, SPEC-009, SPEC-010 as applicable  
-**Authority:** Product Definition v1, Architecture v1 and applicable ADRs
+**Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and applicable accepted ADRs
 
 ## 1. Purpose / Objective
 

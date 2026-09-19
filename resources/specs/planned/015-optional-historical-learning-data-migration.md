@@ -2,7 +2,7 @@
 
 **Status:** PLANNED — FUTURE / NOT MVP  
 **Depends on:** SPEC-006, SPEC-013, SPEC-014  
-**Authority:** Product Definition v1, Architecture v1 and applicable ADRs
+**Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and applicable accepted ADRs
 
 ## 1. Purpose / Objective
 

@@ -1,12 +1,14 @@
-# SPEC-007 — H5P Authoring & Content Workflow
+# SPEC-007 — Activity Authoring & H5P Content Workflow
 
-**Status:** PLANNED — DECISION READY / USABILITY GATE REQUIRED  
-**Depends on:** SPEC-004, SPEC-005, SPEC-006  
-**Authority:** Product Definition v1, Architecture v1 and applicable ADRs
+**Status:** PLANNED — DECISION READY / USABILITY GATE REQUIRED / RECONCILIATION REQUIRED
+**Depends on:** SPEC-004, SPEC-005, SPEC-006
+**Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, `docs/ADR-001-LUMI-H5P-RUNTIME.md`, `docs/ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md` and applicable accepted ADRs
+
+> **Reconciliation note (2026-09-19):** wording that equated an Activity with one H5P object was corrected to the ADR-002 boundary. The rest of this SPEC predates the composed Activity model and still requires full reconciliation before activation (see `resources/specs/README.md`).
 
 ## 1. Purpose / Objective
 
-Provide authorized non-technical pedagogical authors a PFY-managed H5P create/edit/preview/publish workflow.
+Provide authorized non-technical pedagogical authors a PFY-managed create/edit/preview/publish workflow for composed Activities, including H5P-backed Exercise blocks.
 
 ## 2. Current State
 
@@ -18,13 +20,14 @@ Technical editor functionality alone is insufficient for PFY official-content go
 
 ## 4. Decision
 
-Wrap Lumi editor with PFY-owned metadata, lifecycle, permissions, preview and publish controls.
+Provide a PFY-owned Activity authoring shell with metadata, ordered content blocks, lifecycle, permissions, preview and publish controls. The Lumi editor remains the editor for H5P-backed Exercise blocks only; it is not the complete Activity editor (ADR-002, "Authoring consequence").
 
 ## 5. Scope
 
 ### In Scope
 - Content Author capability;
-- create/edit H5P Activity;
+- create/edit composed Activity (metadata and ordered content blocks);
+- create/edit H5P-backed Exercise blocks through the Lumi editor;
 - title/metadata;
 - draft save;
 - preview;
@@ -73,4 +76,8 @@ Document authoring workflow, capability and usability-validation evidence.
 
 ## 12. Open Questions / Blockers
 
-Before activation decide whether MVP is direct draft->publish or requires a separate review/approval role.
+`DECISION REQUIRED — AUTHORING REVIEW/APPROVAL WORKFLOW`: before activation decide whether MVP is direct draft->publish or requires a separate review/approval role.
+
+`DECISION REQUIRED — EDITING PUBLISHED CONTENT WITH EXISTING ATTEMPTS`: the effect of editing a published Activity or Exercise that already has learner Attempts (for example, adding an Exercise to an Activity learners have completed, or changing an Exercise's scoring) on Attempt evidence, Activity Progress and Activity Performance is not defined. It must be decided before activation and must not be resolved by implementation.
+
+The UX prototype does not cover authoring surfaces (`resources/ux/PROTOTYPE-CONFLICTS.md`, "Coverage gaps").

@@ -36,6 +36,8 @@ Implementation work is governed through:
 
 The approved PFY UX prototype is a UX reference only. It does not override product-domain, authorization, security, architecture, migration or data-semantics contracts defined by the authoritative documentation and active SPEC.
 
+The prototype is versioned under [`resources/ux/`](resources/ux/README.md) together with a register of its known conflicts with authoritative documentation ([`resources/ux/PROTOTYPE-CONFLICTS.md`](resources/ux/PROTOTYPE-CONFLICTS.md)).
+
 ## Product direction
 
 The approved learning model is:

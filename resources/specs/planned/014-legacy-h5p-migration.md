@@ -1,12 +1,16 @@
-# SPEC-014 — Legacy H5P Migration
+# SPEC-014 — Legacy Learning Content Migration
 
-**Status:** PLANNED — DECISION READY / PRODUCTION GATES REQUIRED  
-**Depends on:** SPEC-004, SPEC-005, SPEC-007  
-**Authority:** Product Definition v1, Architecture v1 and applicable ADRs
+**Status:** PLANNED — DECISION READY / PRODUCTION GATES REQUIRED / RECONCILIATION REQUIRED
+**Depends on:** SPEC-004, SPEC-005, SPEC-007
+**Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, `docs/ADR-001-LUMI-H5P-RUNTIME.md`, `docs/ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md` and applicable accepted ADRs
+
+> **Reconciliation note (2026-09-19):** wording that mapped legacy H5P packages directly to PFY Activities was corrected to the ADR-002 boundary (H5P package → H5P-backed PFY Exercise). The rest of this SPEC predates the composed Activity model and still requires full reconciliation before activation (see `resources/specs/README.md`).
 
 ## 1. Purpose / Objective
 
-Migrate the legacy WordPress H5P corpus into canonical PFY Activities with normalized libraries, sanitization and automated render verification.
+Migrate the legacy WordPress H5P corpus into H5P-backed PFY Exercises with normalized libraries, sanitization and automated render verification.
+
+Importing an H5P package does not by itself reconstruct a complete PFY Activity. Legacy Activity-composition migration and legacy Syllabus/Percurso migration remain decision-gated (see Section 12).
 
 ## 2. Current State
 
@@ -18,7 +22,7 @@ PFY needs existing pedagogical content without WordPress runtime dependency.
 
 ## 4. Decision
 
-Export legacy `.h5p`, inventory/normalize libraries, sanitize/import, create PFY Activity mappings, preserve legacy H5P IDs and render-verify.
+Export legacy `.h5p`, inventory/normalize libraries, sanitize/import, map each imported package to an H5P-backed PFY Exercise (`PFY Exercise UUID ↔ Lumi content id` through the PFY H5P Adapter, per ADR-002), preserve legacy H5P IDs as provenance and render-verify.
 
 ## 5. Scope
 
@@ -29,7 +33,7 @@ Export legacy `.h5p`, inventory/normalize libraries, sanitize/import, create PFY
 - patch normalization;
 - trusted library installation;
 - sanitized import;
-- Activity mapping;
+- H5P package → PFY Exercise mapping;
 - legacy provenance;
 - assets/media;
 - full render gate;
@@ -44,7 +48,7 @@ Export legacy `.h5p`, inventory/normalize libraries, sanitize/import, create PFY
 
 ## 6. Expected Behavior
 
-Every eligible legacy activity is imported/render-verified or explicitly reported as an exception; PFY UUID becomes canonical.
+Every eligible legacy H5P package is imported/render-verified as an H5P-backed PFY Exercise or explicitly reported as an exception; the PFY Exercise UUID becomes canonical.
 
 ## 7. Constraints
 - sanitize before persistence;
@@ -80,3 +84,8 @@ Record final counts, library inventory, exceptions, runbook and validation evide
 ## 12. Open Questions / Blockers
 
 Requires SPEC-005 security invariants, handling of GPL production gate, and a fresh production corpus inventory because legacy content may change.
+
+Unresolved decisions that must not be resolved by implementation:
+
+- `DECISION REQUIRED — LEGACY ACTIVITY COMPOSITION MIGRATION` (`docs/PRODUCT_DEFINITION.md` §23; `docs/ARCHITECTURE.md` §26; ADR-002): how legacy editorial content, media, embeds, ordering and metadata are reconstructed into composed PFY Activities. Because an Exercise belongs to exactly one Activity (SPEC-004), how imported Exercises are attached to Activities depends on this decision.
+- `DECISION REQUIRED — LEGACY SYLLABUS/PERCURSO MIGRATION` (`docs/ARCHITECTURE.md` §27): extraction, Activity association, ordering, workload, level, pedagogical metadata and reconciliation.

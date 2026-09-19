@@ -464,6 +464,13 @@ PFY derives Activity performance from the latest completed Attempts of its scora
 - does not change learner level;
 - does not imply CEFR mastery or lack of mastery.
 
+The following Activity Performance semantics are not yet defined:
+
+- `DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`: this document refers to scorable Exercises but does not define how an Exercise is determined to be scorable. Scoreability must not be inferred from the presence or absence of scores in existing Attempts.
+- `DECISION REQUIRED — ACTIVITY PERFORMANCE ADEQUATE/ATTENTION AGGREGATION`: the rule that distinguishes `adequate` from `attention` for scored Activities that do not satisfy `needs_review` is not defined.
+
+Thresholds shown in the UX prototype are proposals only (see `resources/ux/PROTOTYPE-CONFLICTS.md`, UXC-13).
+
 ## 13. Learner feedback
 
 When an Activity completes, the learner should receive an explicit result summary.
@@ -665,6 +672,8 @@ The approved PFY prototype is an authoritative UX reference for visual identity,
 The prototype is not the authoritative source for database schema, domain invariants, authorization, calculation rules beyond explicitly approved decisions, migration semantics, architecture, security or unrepresented edge cases.
 
 Mock data in the prototype does not establish product semantics.
+
+The prototype and the register of its known conflicts with this document are versioned under `resources/ux/`.
 
 ## 27. Current state
 

@@ -2,7 +2,7 @@
 
 **Status:** PLANNED — DECISION READY  
 **Depends on:** SPEC-003, SPEC-006  
-**Authority:** Product Definition v1, Architecture v1 and applicable ADRs
+**Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and applicable accepted ADRs
 
 ## 1. Purpose / Objective
 
@@ -10,7 +10,7 @@ Implement invitation-based teacher-student relationships and authorized teacher 
 
 ## 2. Current State
 
-Product Definition v1 defines pending/active/revoked and persistence independent of subscription lifecycle.
+`docs/PRODUCT_DEFINITION.md` defines pending/active/revoked and persistence independent of subscription lifecycle.
 
 ## 3. Problem / Gap
 
@@ -27,7 +27,7 @@ An active relationship established by invitation/acceptance is required for teac
 - acceptance;
 - pending/active/revoked lifecycle;
 - relationship listing;
-- linked student full PFY history;
+- linked student PFY learning history as defined by the canonical evidence layers (Exercise Attempts, Activity Progress, Activity Performance and Percurso progress; `docs/ARCHITECTURE.md` §15–16);
 - revoke;
 - authorization/RLS tests;
 - persistence independent of payment.
@@ -72,3 +72,13 @@ Document final relationship lifecycle and authorization.
 ## 12. Open Questions / Blockers
 
 Define invitation expiration/reissue policy before activation.
+
+Also unresolved and relevant to this SPEC's surfaces (recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`; do not implement from the prototype):
+
+- `DECISION REQUIRED — TEACHER STUDENT GROUPING (CLASSES)` (UXC-08);
+- `DECISION REQUIRED — TEACHER INFORMATION ARCHITECTURE` (UXC-19);
+- `DECISION REQUIRED — CURRENT PERCURSO SEMANTICS` (UXC-14).
+
+Prototype assignments (UXC-09) and generic learner progress percentages (UXC-10) conflict with current contracts and remain out of scope.
+
+This SPEC still requires full reconciliation with `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and ADR-002 before activation (see `resources/specs/README.md`).

@@ -1,7 +1,7 @@
 # SPEC-006 --- Exercise Attempts, Activity Progress & Results
 
 **Status:** PLANNED --- DECISION READY / ACTIVITY PERFORMANCE
-AGGREGATION REQUIRED\
+AGGREGATION & EXERCISE SCOREABILITY REQUIRED\
 **Depends on:** SPEC-004 --- Learning Content Model, Percursos & Shared
 Library; SPEC-005 --- H5P Runtime Production Integration\
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`,
@@ -195,6 +195,10 @@ Activity-level aggregation rule distinguishing `adequate` from
 
 That missing rule is preserved as an explicit decision gate in this SPEC
 rather than invented by implementation.
+
+The authoritative documents also refer to scorable Exercises without
+defining how an Exercise is determined to be scorable. That is preserved
+as a separate decision gate (Section 11).
 
 ## 5. Scope
 
@@ -664,11 +668,56 @@ Implementation must not infer this from:
 -   prototype mock data;
 -   implementation convenience.
 
-Until this rule is approved and added to authoritative product
+### Exercise scoreability / assessment semantics
+
+`DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`
+
+The `needs_review` rule and `no_score` depend on the set of scorable
+Exercises in an Activity. The authoritative documents do not define how
+an Exercise is determined to be scorable.
+
+Implementation must not infer scoreability from the presence or absence
+of scores in existing Attempts. Under that inference, scoreability would
+depend on learner evidence, an unattempted Exercise would have unknown
+scoreability, and the `needs_review` denominator would vary per learner.
+
+The decision must at least address:
+
+-   where scoreability is defined (Exercise content model, H5P
+    content/library metadata, authoring configuration or another
+    source);
+-   H5P content that completes without a score or reports a maximum
+    score of zero;
+-   content types whose scoring depends on their configuration;
+-   what happens when an Exercise's scoreability changes after Attempts
+    exist.
+
+This decision may also affect SPEC-004 (Exercise model) and SPEC-005
+(H5P metadata).
+
+### Proposal input from the UX prototype (not approved)
+
+The UX prototype classifies an individual Exercise's latest completed
+score as `>= 70%` adequate, `>= 50%` attention and `< 50%` needs_review
+(`resources/ux/PROTOTYPE-CONFLICTS.md`, UXC-13).
+
+This is recorded only as input to the decisions above. It is not
+approved behavior:
+
+-   the 70% threshold is not approved;
+-   Exercise-level performance bands are not part of the product
+    contract;
+-   `needs_review` is an Activity-level state, not an Exercise label;
+-   the prototype defines no Activity-level rule separating `adequate`
+    from `attention`.
+
+### Gate state
+
+Until these decisions are approved and added to authoritative product
 documentation, this SPEC remains:
 
-**PLANNED --- DECISION READY / ACTIVITY PERFORMANCE AGGREGATION
-REQUIRED**
+**PLANNED --- DECISION READY / ACTIVITY PERFORMANCE AGGREGATION &
+EXERCISE SCOREABILITY REQUIRED**
 
 ## 12. Expected Behavior
 
@@ -801,7 +850,9 @@ SPEC-006 establishes canonical learning evidence consumed by:
 -   [ ] `needs_review` triggers when \>= 50% of scorable Exercises have
     latest completed score \< 50%.
 -   [ ] Non-scoring Exercises are excluded from the `needs_review`
-    denominator.
+    denominator, classified according to the approved scoreability
+    decision (Section 11) and not inferred from learner Attempt
+    evidence.
 -   [ ] `needs_review` does not make Activity incomplete.
 -   [ ] `needs_review` does not block Percurso progression.
 -   [ ] No unsupported average/mastery metric is introduced.
@@ -928,24 +979,37 @@ PFY must define how a scored Activity that does not satisfy
 `needs_review` is deterministically classified as `adequate` versus
 `attention`.
 
+`DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`
+
+PFY must define how an Exercise is determined to be scorable,
+independently of learner Attempt evidence (Section 11).
+
 ### Non-blocking
 
 `RAW XAPI RETENTION`
 
 No decision is needed if raw xAPI is not durably retained.
 
+`CURRENT PERCURSO SEMANTICS`
+
+The UX prototype shows a learner's "current Percurso"
+(`resources/ux/PROTOTYPE-CONFLICTS.md`, UXC-14). This is undefined and
+must not be implemented from the prototype. Percurso progress itself
+remains derived from Activity completion.
+
 ## 19. Activation Gate
 
 This SPEC remains:
 
-**PLANNED --- DECISION READY / ACTIVITY PERFORMANCE AGGREGATION
-REQUIRED**
+**PLANNED --- DECISION READY / ACTIVITY PERFORMANCE AGGREGATION &
+EXERCISE SCOREABILITY REQUIRED**
 
 Promote to `ACTIVE — IMPLEMENTATION READY` only when:
 
 ``` text
 SPEC-005 completed/coherence state sufficient for tracking integration
 + Activity Performance adequate/attention rule approved
++ Exercise scoreability/assessment semantics approved
 + authoritative documentation updated
 + repository state revalidated
 + no new blocking contradiction

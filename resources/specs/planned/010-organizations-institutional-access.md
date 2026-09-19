@@ -2,7 +2,7 @@
 
 **Status:** PLANNED — DECISION READY  
 **Depends on:** SPEC-003, SPEC-009  
-**Authority:** Product Definition v1, Architecture v1 and applicable ADRs
+**Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and applicable accepted ADRs
 
 ## 1. Purpose / Objective
 

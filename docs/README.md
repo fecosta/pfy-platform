@@ -1,7 +1,7 @@
 # Portuguese for You — Authoritative Documentation
 
 **Status:** CURRENT  
-**Last reconciled:** 2026-09-18
+**Last reconciled:** 2026-09-19
 
 This directory contains the durable product and architecture knowledge for the greenfield Portuguese for You (PFY) rebuild.
 
@@ -150,7 +150,10 @@ Still requiring explicit resolution before applicable implementation:
 - payment provider and billing lifecycle rules;
 - legacy Activity composition migration strategy;
 - legacy Syllabus/Percurso migration strategy;
-- raw xAPI retention if raw statements are retained.
+- raw xAPI retention if raw statements are retained;
+- Exercise scoreability / assessment semantics (how an Exercise is determined to be scorable; must not be inferred from existing Attempts);
+- Activity Performance `adequate`/`attention` aggregation rule;
+- product decisions surfaced by the UX prototype, recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`.
 
 ## UX reference rule
 
@@ -173,6 +176,10 @@ It is not authoritative for:
 - all possible edge cases.
 
 Absence or simplification in the prototype does not remove a product contract defined in authoritative documentation or an active SPEC.
+
+UX references apply only where they do not conflict with authoritative documents. Unsupported prototype concepts do not become requirements automatically.
+
+The current prototype, its authority rules and the register of its known conflicts are versioned under `resources/ux/` (see `resources/ux/README.md` and `resources/ux/PROTOTYPE-CONFLICTS.md`).
 
 ## Source-of-truth hierarchy
 

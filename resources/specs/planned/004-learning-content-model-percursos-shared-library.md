@@ -64,7 +64,7 @@ Lumi content id
 
 SPEC-004 does not implement the adapter or Lumi mapping.
 
-The existing planned SPEC-004 predates these decisions and models `ActivityCollection` and `Textbook` as central learning structures.
+The previous draft of SPEC-004 predated these decisions and modeled `ActivityCollection` and `Textbook` as central learning structures.
 
 That model is no longer authoritative for the current MVP.
 
@@ -707,6 +707,15 @@ The following are explicitly **not blockers** for SPEC-004:
 - content-subset licensing;
 - payment provider;
 - legacy migration strategy.
+
+The following unresolved decisions may affect this SPEC and must be re-checked at activation:
+
+- `DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS` (`docs/PRODUCT_DEFINITION.md` §12; SPEC-006 §11). If the decision places scoreability or assessment semantics on the Exercise content model, it must be resolved and reconciled here before activation. Until then, SPEC-004 must not introduce, default or infer an Exercise scoreability attribute.
+- Decisions surfaced by the UX prototype that touch SPEC-004 surfaces (recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`; do not implement from the prototype):
+  - `DECISION REQUIRED — MINHA BIBLIOTECA SEMANTICS` (UXC-17);
+  - `DECISION REQUIRED — WRITTEN REFLECTION INPUT` (UXC-03);
+  - `DECISION REQUIRED — CURRENT PERCURSO SEMANTICS` (UXC-14).
+  The fixed/sequential workspace and manual completion shown in the prototype (UXC-01, UXC-02) conflict with this SPEC's §5.2 and §11.
 
 If activation-time repository evidence contradicts an authoritative contract, stop and reconcile before implementation.
 

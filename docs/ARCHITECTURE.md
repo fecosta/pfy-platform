@@ -1,9 +1,9 @@
 # Portuguese for You — Architecture v2
 
-**Status:** DECISION READY — ARCHITECTURE v2  
-**Date:** 2026-09-18  
-**Architecture style:** modular web application with isolated H5P runtime  
-**Supersedes:** `ARCHITECTURE.md` for current architecture intent  
+**Status:** DECISION READY — ARCHITECTURE v2
+**Date:** 2026-09-18
+**Architecture style:** modular web application with isolated H5P runtime
+**Supersedes:** Architecture v1 (`docs/ARCHITECTURE_v1.md`, removed; preserved in repository history)
 **Related:** `PRODUCT_DEFINITION.md`, `ADR-001-LUMI-H5P-RUNTIME.md`, `ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md`
 
 ## 1. Objective
@@ -294,6 +294,8 @@ total scorable Exercises
 ```
 
 No Activity Performance state may change Activity completion or block Percurso progression.
+
+Exercise scoreability / assessment semantics and the `adequate`/`attention` aggregation remain `DECISION REQUIRED` (see `PRODUCT_DEFINITION.md` §12).
 
 ## 14. Percurso progress
 
