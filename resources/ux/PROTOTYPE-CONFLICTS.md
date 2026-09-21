@@ -233,19 +233,37 @@ Status colors must come from a validated semantic status palette in the design t
 
 ### UXC-18 — Independent learner access
 
-**Class:** `DECISION REQUIRED — INDEPENDENT LEARNER ACCESS MODEL`
+**Class:** `DECISION REQUIRED — INDEPENDENT LEARNER ENTITLEMENT / ACCESS MODEL`
 
 **Prototype:** the landing page offers "Para alunos — Aprenda no seu ritmo" with "Comece agora" / "Entrar" self-entry.
 
-The defined access paths are:
+**Resolved identity decision:** SPEC-002 establishes that a new person may self-register a canonical PFY identity through the email-first Magic Link flow.
+
+Self-registration is therefore no longer an open identity/authentication decision.
+
+Account creation does not itself create:
+
+- Student capability;
+- Teacher capability;
+- an Organization membership;
+- a teacher-student relationship;
+- a license;
+- an entitlement;
+- paid learning access.
+
+The remaining open question is what authorization and entitlement, if any, an independently registered user receives.
+
+The currently defined commercial/access paths include:
 
 - B2C plans bought by Teachers, with Student capacity (`PRODUCT_DEFINITION.md` §20);
 - institutional licenses;
 - PFY Impact sponsorship.
 
-No path is defined for a learner without a Teacher or Organization, even though independent learner practice is a supported usage mode (§1).
+Independent learner practice remains a supported usage mode, but its entitlement/access model is not yet defined.
 
-**Affects:** SPEC-002 (self-registration), SPEC-009, SPEC-012.
+**Affects:** SPEC-009, SPEC-012.
+
+**Does not block:** SPEC-002 self-registration or authentication.
 
 ### UXC-19 — Teacher information architecture
 
@@ -270,6 +288,7 @@ The teacher navigation must be defined consistently with UXC-08 and UXC-09 befor
 
 The prototype does not represent these surfaces. They need UX definition before their SPECs:
 
+- authentication surfaces (sign-in, progressive sign-up, Magic Link confirmation/error states) are not represented by the prototype; their behavior is defined by SPEC-002 and therefore this is a UX coverage gap, not a product decision blocker;
 - sign-in, sign-up, activation and recovery (SPEC-002);
 - teacher invitation, acceptance and pending/revoked states (SPEC-008);
 - Activity authoring shell and H5P Exercise editing (SPEC-007);
