@@ -93,8 +93,6 @@ Verify:
 
 ### Active
 
-### Active
-
 - **SPEC-002 — Identity & Authentication**
   - `active/002-identity-authentication.md`
   - Fully reconciled with the current identity, authentication, migration-continuity, and self-registration decisions.
@@ -102,22 +100,21 @@ Verify:
 
 ### Planned roadmap
 
-The dependency-oriented planned roadmap is:
-
+The dependency-oriented planned roadmap after the current active SPEC is:
 
 1. **SPEC-003 — Authorization Foundation**
-3. **SPEC-004 — Learning Content Model, Percursos & Shared Library**
-4. **SPEC-005 — H5P Runtime Production Integration**
-5. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
-6. **SPEC-007 — Activity Authoring & H5P Content Workflow**
-7. **SPEC-008 — Teacher–Student Relationships & Monitoring**
-8. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
-9. **SPEC-010 — Organizations & Institutional Access**
-10. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
-11. **SPEC-012 — B2C Billing Integration**
-12. **SPEC-013 — Legacy User Migration**
-13. **SPEC-014 — Legacy Learning Content Migration**
-14. **SPEC-015 — Optional Historical Learning Data Migration**
+2. **SPEC-004 — Learning Content Model, Percursos & Shared Library**
+3. **SPEC-005 — H5P Runtime Production Integration**
+4. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
+5. **SPEC-007 — Activity Authoring & H5P Content Workflow**
+6. **SPEC-008 — Teacher–Student Relationships & Monitoring**
+7. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
+8. **SPEC-010 — Organizations & Institutional Access**
+9. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
+10. **SPEC-012 — B2C Billing Integration**
+11. **SPEC-013 — Legacy User Migration**
+12. **SPEC-014 — Legacy Learning Content Migration**
+13. **SPEC-015 — Optional Historical Learning Data Migration**
 
 SPEC-001 is completed. SPEC-002 is the current active implementation unit.
 

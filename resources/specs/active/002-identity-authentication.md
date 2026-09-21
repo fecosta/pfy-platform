@@ -1,6 +1,6 @@
 # SPEC-002 — Identity & Authentication
 
-**Status:** PLANNED — IMPLEMENTATION READY  
+**Status:** ACTIVE — IMPLEMENTATION READY  
 **Depends on:** SPEC-001 — Application Foundation  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, accepted ADRs, approved product decisions
 
