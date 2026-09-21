@@ -1,6 +1,6 @@
 # SPEC-001 — Application Foundation
 
-**Status:** COMPLETED — VALIDATED 2026-09-21 
+**Status:** COMPLETED — VALIDATED 2026-09-21
 **Depends on:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`  
 **Does not depend on:** H5P runtime implementation, billing, organizations, teacher-student relationships, legacy migration  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and applicable accepted ADRs
@@ -298,7 +298,7 @@ SPEC-001 is complete only when all applicable criteria are evidenced.
 
 - [x] Application has an established server-side Supabase integration convention.
 - [x] Database migrations are version-controlled.
-- [x] A clean local/development database can apply the migration baseline successfully. Evidence: `supabase db reset --local` passed twice on 2026-09-19 using OrbStack and Supabase CLI 2.100.1.
+- [x] A clean local/development database can apply the migration baseline successfully. Evidence: `supabase db reset --local` passed twice on 2026-09-21 using OrbStack and Supabase CLI 2.100.1.
 - [x] No speculative future-domain schema has been added.
 
 ### Quality
