@@ -93,7 +93,7 @@ Verify:
 
 ### Active
 
-No specification is currently active. The next roadmap item must be reconciled and explicitly activated before implementation.
+SPEC-002 has been fully reconciled with the current identity, authentication, migration-continuity, and self-registration decisions and is implementation-ready pending explicit lifecycle activation.
 
 ### Planned roadmap
 
@@ -133,7 +133,9 @@ Several planned learning-domain SPECs were drafted before the composed Activity 
 | SPEC-008 | Learning-history wording aligned with canonical evidence layers; full reconciliation still required. |
 | SPEC-014 | Stale H5P-to-Activity mapping corrected to H5P-to-Exercise; full reconciliation still required; Activity-composition and Syllabus/Percurso migration remain `DECISION REQUIRED`. |
 
-The remaining planned SPECs (002, 003, 009–013, 015) had only their authority references updated to the current canonical documents; SPEC-002 additionally records related open decisions in its §12.
+SPEC-002 has been fully reconciled with the current identity, authentication, migration-continuity, and self-registration decisions and is implementation-ready pending explicit lifecycle activation.
+
+The remaining planned SPECs (003, 009–013, 015) have not yet received equivalent activation-level reconciliation.
 
 Before activation, the contracts below must hold:
 

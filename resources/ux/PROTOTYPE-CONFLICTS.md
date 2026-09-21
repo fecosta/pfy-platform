@@ -289,7 +289,6 @@ The teacher navigation must be defined consistently with UXC-08 and UXC-09 befor
 The prototype does not represent these surfaces. They need UX definition before their SPECs:
 
 - authentication surfaces (sign-in, progressive sign-up, Magic Link confirmation/error states) are not represented by the prototype; their behavior is defined by SPEC-002 and therefore this is a UX coverage gap, not a product decision blocker;
-- sign-in, sign-up, activation and recovery (SPEC-002);
 - teacher invitation, acceptance and pending/revoked states (SPEC-008);
 - Activity authoring shell and H5P Exercise editing (SPEC-007);
 - license capacity, seat allocation and organization membership management (SPEC-009, SPEC-010);
