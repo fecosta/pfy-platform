@@ -23,6 +23,23 @@ The existing WordPress platform is a legacy source of content, users and migrati
 
 ## 2. Product principles
 
+### Identity registration and access
+
+PFY may allow a person to self-register a canonical PFY identity through the approved authentication flow independently of commercial access.
+
+Creating and authenticating a PFY identity does not by itself create:
+
+- Teacher or Student capability;
+- an Organization membership;
+- a teacher-student relationship;
+- a license or license allocation;
+- an entitlement;
+- paid learning access.
+
+Identity creation, authorization and entitlement are separate product concerns.
+
+The access available to an independently registered user is defined by the applicable authorization and entitlement contracts, not by registration itself.
+
 ### 2.1 Activity-first
 
 `Activity` is the fundamental PFY learning unit.

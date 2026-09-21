@@ -192,26 +192,27 @@ SPEC-002 must only establish the identity model and authentication behavior requ
 
 ## 6. Identity Model
 
-PFY must maintain a clear separation between authentication identity and application identity.
+PFY must maintain a clear separation between authentication identity, canonical application identity, login-email identity, and user-facing profile data.
 
 Conceptually:
 
 ```text
-Supabase Auth
-auth.users
-     │
-     │ 0..1 : 1
-     ▼
 PFY User
-     │
-     │ 1 : 1
-     ▼
-Profile
+   │
+   ├── 0..1 linked Supabase Auth identity
+   │
+   ├── 1 primary login email
+   │
+   └── 1 Profile
 ```
 
 A PFY User is the canonical application identity.
 
-A Profile contains user-facing personal attributes associated with that identity.
+A PFY login email is the application-owned email identity used to locate and provision a PFY User before a Supabase Auth identity necessarily exists.
+
+A Profile contains user-facing personal attributes associated with the canonical PFY User.
+
+Supabase Auth remains responsible for authentication credentials and authenticated sessions. It is not the sole source of pre-authentication PFY identity lookup because migrated or otherwise approved pre-provisioned PFY Users may exist before their Supabase Auth identity is activated.
 
 An authenticated account that is usable inside PFY must resolve deterministically to exactly one canonical PFY User.
 
@@ -219,13 +220,15 @@ A PFY User may temporarily exist without an activated Supabase Auth identity whe
 
 Once linked, one Supabase Auth identity must not resolve to multiple PFY Users.
 
+The login-email identity must not itself grant authorization or entitlement.
+
 ---
 
-## 7. Canonical User
+## 7. Canonical User and Login Email
 
 The application-owned User represents stable PFY identity.
 
-The implementation must provide an equivalent of:
+The implementation must provide semantics equivalent to:
 
 ```text
 users
@@ -237,19 +240,40 @@ created_at
 updated_at
 ```
 
-Exact table and column names remain implementation freedom provided the semantics are preserved.
+and an application-owned login-email identity equivalent to:
 
-### Requirements
+```text
+user_emails
 
-`id` is the canonical PFY user identifier.
+user_id             UUID
+email               TEXT
+normalized_email    TEXT UNIQUE
+is_primary          BOOLEAN
+created_at
+updated_at
+```
 
-`auth_user_id` links the PFY identity to Supabase Auth.
+The exact physical schema, table names, column names, and whether the MVP login-email identity is represented in a dedicated relation or an equivalently constrained application-owned structure remain implementation freedom.
 
-`auth_user_id` may initially be null for identities provisioned before authentication, including migrated legacy users.
+The following semantics are not implementation freedom.
+
+### Canonical PFY identity
+
+`users.id` or its equivalent is the canonical PFY user identifier.
+
+The legacy WordPress user identifier must never become the canonical PFY identifier.
+
+### Authentication linkage
+
+`auth_user_id` or its equivalent links the PFY identity to Supabase Auth.
+
+The authentication linkage may initially be absent for identities provisioned before authentication, including migrated legacy users.
 
 Once established, the authentication relationship must be unique.
 
-`legacy_wp_user_id` exists only as migration provenance.
+### Legacy provenance
+
+`legacy_wp_user_id` or its equivalent exists only as migration provenance.
 
 It must not become:
 
@@ -257,13 +281,42 @@ It must not become:
 - an authentication credential;
 - a client-controlled field.
 
+### Login-email identity
+
+Every PFY User that may authenticate through the email-first flow must have exactly one primary login email under the SPEC-002 contract.
+
+The login email must be available independently of `auth.users` so that PFY can safely identify a migrated or otherwise approved pre-provisioned user whose Supabase Auth identity has not yet been activated.
+
+Normalized primary login email identity must be unique across PFY Users.
+
+The login email must not be client-writable outside the approved identity provisioning flow.
+
+The login-email relation must not expose a general user directory to browser clients.
+
+### Supabase Auth synchronization
+
+For a newly registered user, the PFY primary login email and the email used to establish the Supabase Auth identity must represent the same normalized email identity.
+
+For a migrated or otherwise pre-provisioned user without `auth_user_id`, successful first authentication may link the authenticated Supabase identity only when the authenticated email matches the existing PFY primary login email under the approved normalization rules.
+
+That linking operation must:
+
+- preserve the existing canonical PFY User;
+- be deterministic;
+- be idempotent;
+- reject attempts to link an authentication identity to the wrong PFY User;
+- reject an authenticated email that does not match the PFY login identity;
+- remain protected from browser-controlled identity assignment.
+
+Email-change workflows are outside SPEC-002.
+
 ---
 
 ## 8. Profile
 
-User-facing identity attributes must be stored separately from authentication credentials.
+User-facing personal attributes must be stored separately from authentication credentials and canonical identity linkage.
 
-The implementation must provide an equivalent of:
+The implementation must provide semantics equivalent to:
 
 ```text
 profiles
@@ -283,9 +336,14 @@ The initial registration flow requires:
 - first name;
 - last name.
 
-Email authentication identity remains governed by Supabase Auth and the identity provisioning layer.
+First name and last name belong to the PFY Profile.
 
-The implementation must avoid creating competing authoritative email fields without an explicit synchronization contract.
+The submitted email establishes the PFY primary login-email identity and is also used for the corresponding Supabase Auth Magic Link flow.
+
+The application must not create competing authoritative login-email representations without an explicit synchronization contract.
+
+Email-change behavior is outside SPEC-002.
+
 
 ---
 
@@ -369,28 +427,61 @@ SPEC-002 must not introduce a global role field as a shortcut for future authori
 
 ---
 
-## 11. Email Existence Resolution
+## 11. Email Existence Resolution and Controlled Disclosure
 
-The application must be able to determine whether a submitted email corresponds to an existing PFY identity in order to provide the progressive login/registration experience.
+The application must determine whether a submitted email corresponds to an existing PFY login identity in order to provide the approved progressive login/registration experience.
 
-This capability must be implemented through a controlled server-side boundary.
+The approved UX intentionally distinguishes between:
+
+```text
+existing email
+→ send Magic Link
+
+unknown email
+→ reveal first-name and last-name registration fields
+```
+
+Therefore, the existence of a PFY identity for one specifically submitted email is an intentional and bounded disclosure required by the approved product behavior.
+
+SPEC-002 does not claim that account existence is fully concealed.
+
+Instead, the implementation must minimize the security impact of this disclosure and prevent it from becoming general user-directory access.
+
+The lookup must operate through a controlled server-side boundary.
 
 The browser must not receive unrestricted access to:
 
 - `auth.users`;
-- the PFY user directory;
-- arbitrary user lookup queries.
+- the PFY User table;
+- the PFY login-email relation;
+- Profiles;
+- arbitrary user search or listing capabilities.
 
-The implementation must minimize user-enumeration risk while preserving the approved progressive UX.
+The lookup must:
 
-The exact API, server action, RPC, or equivalent mechanism is implementation freedom.
+- accept only the specific email being evaluated by the authentication flow;
+- use the canonical email-normalization rules;
+- return only the minimum state necessary to continue the approved UX;
+- not return canonical PFY User IDs;
+- not return Supabase Auth IDs;
+- not return names;
+- not return legacy identifiers;
+- not return roles, relationships, organization data, licenses, entitlements, or other profile metadata;
+- be server-controlled;
+- be narrowly scoped;
+- be subject to appropriate rate limiting or equivalent abuse protection;
+- not support bulk lookup, wildcard search, prefix search, enumeration endpoints, or directory listing.
 
-It must be:
+Conceptually, the client may receive only an equivalent of:
 
-- server-controlled;
-- narrowly scoped;
-- rate-limitable;
-- safe against arbitrary user-directory enumeration.
+```text
+registration_required = true | false
+```
+
+The exact API, Server Action, route handler, RPC, response shape, and abuse-control implementation remain implementation freedom provided these security semantics are preserved.
+
+The intentional single-email existence disclosure must be covered by security review and tests.
+
 
 ---
 
@@ -634,6 +725,9 @@ Browser clients must not be allowed to:
 - assign arbitrary `legacy_wp_user_id` values;
 - bypass canonical identity provisioning;
 - create identity relationships outside the approved provisioning flow.
+- assign or change primary login-email ownership outside the approved provisioning flow;
+- query or list the PFY login-email directory directly;
+- use login-email lookup to retrieve PFY User IDs or profile metadata.
 
 ---
 
@@ -664,6 +758,16 @@ SPEC-002 must preserve the following security invariants:
 11. Repeated Magic Link requests must be subject to appropriate abuse protection.
 
 12. Identity creation must be protected against duplicate and concurrent provisioning.
+
+13. PFY login-email identity must remain application-owned and protected independently of Supabase Auth credentials.
+
+14. The approved progressive authentication UX intentionally discloses whether one specifically submitted email requires registration. The implementation must limit that disclosure to the minimum boolean-equivalent state necessary for the flow.
+
+15. No browser-accessible interface may provide bulk account discovery, user-directory search, or identity metadata through the email-existence mechanism.
+
+16. Linking a first Supabase Auth identity to a pre-provisioned PFY User requires a verified authenticated email matching that PFY User's normalized primary login email.
+
+17. Email-change behavior is outside SPEC-002 and must not be invented as part of implementation.
 
 ---
 
@@ -881,6 +985,40 @@ No privileged Supabase credentials are present in browser bundles or public envi
 
 ---
 
+### AC-21 — Pre-authentication login identity
+
+A PFY User may exist without an activated Supabase Auth identity while retaining a unique application-owned primary login email.
+
+The system can use that email to recognize the existing PFY User before first Supabase authentication.
+
+---
+
+### AC-22 — Safe first-auth linkage
+
+Given a pre-existing PFY User with a primary login email and no linked Supabase Auth identity,
+
+when a Supabase-authenticated identity proves ownership of the matching normalized email,
+
+then the authentication identity can be linked to the existing PFY User without creating a second canonical user.
+
+A non-matching authenticated email cannot claim that PFY User.
+
+---
+
+### AC-23 — Bounded account-existence disclosure
+
+The email-first authentication flow may reveal only whether the submitted email requires registration.
+
+The lookup does not expose PFY User IDs, Auth IDs, names, profile data, provenance, roles, relationships, licenses, entitlements, or a browsable/searchable user directory.
+
+---
+
+### AC-24 — Login-email protection
+
+Browser clients cannot directly create, reassign, enumerate, or modify canonical login-email ownership outside the approved provisioning flow.
+
+---
+
 ## 26. Required Test Coverage
 
 ### Database / RLS
@@ -897,6 +1035,12 @@ Tests must cover at minimum:
 - legacy provenance protected;
 - duplicate identity linkage rejected;
 - duplicate canonical email identity prevented according to the chosen identity model.
+- primary normalized login email uniqueness;
+- login-email ownership protected from browser writes;
+- login-email directory inaccessible to anonymous/browser directory queries;
+- pre-provisioned user may exist without `auth_user_id`;
+- first-auth linkage preserves the existing canonical PFY User;
+- mismatched authenticated email cannot claim a pre-provisioned PFY User;
 
 ### Application tests
 
@@ -910,6 +1054,10 @@ Tests must cover at minimum:
 - duplicate provisioning;
 - invalid provisioning input;
 - safe redirect handling.
+- bounded email-existence response exposes no identity metadata;
+- pre-authentication lookup uses PFY-owned normalized login email;
+- first-auth identity linking is idempotent;
+- first-auth linking rejects mismatched email ownership;
 
 ### End-to-end tests
 
@@ -1163,6 +1311,11 @@ SPEC-002 may move to `COMPLETED` only when:
 - required unit/integration/database/E2E tests pass;
 - clean database reset and validation pass;
 - required hosted validation passes;
+- every authenticatable PFY User has a protected application-owned primary login email;
+- migrated/pre-provisioned users can be recognized before Supabase Auth activation;
+- first-auth linking preserves canonical PFY identity;
+- email-existence disclosure is limited to the approved bounded state;
+- direct browser enumeration of login identities is prevented;
 - durable project documentation reflects verified current state.
 
 ---
@@ -1188,5 +1341,11 @@ Confirmed decisions:
 - Learner level is not part of SPEC-002.
 - Social login is outside SPEC-002.
 - Authorization and entitlement remain future concerns.
+- PFY owns the primary login-email identity required to recognize users before Supabase Auth activation.
+- A primary normalized login email is unique across PFY Users.
+- The progressive authentication UX intentionally reveals whether one submitted email requires registration.
+- That disclosure is bounded and must not expose a user directory or identity/profile metadata.
+- First-auth linking of a pre-provisioned PFY User requires the authenticated Supabase email to match the PFY primary login email.
+- Email-change workflows are outside SPEC-002.
 
 **Implementation state: IMPLEMENTATION READY.**

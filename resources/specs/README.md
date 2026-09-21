@@ -208,7 +208,6 @@ Legacy Activity-composition migration remains a product/technical decision gate.
 
 The roadmap contains known unresolved gates, including:
 
-- launch authentication UX details;
 - GPL production implications for Lumi;
 - raw xAPI retention if retained;
 - Activity Performance `adequate`/`attention` aggregation;
@@ -223,7 +222,7 @@ The roadmap contains known unresolved gates, including:
 - legacy Activity-composition migration strategy;
 - legacy Syllabus/Percurso migration strategy;
 - optional historical-learning migration value/cost decision;
-- product decisions surfaced by the UX prototype (independent learner access model, learner level, written reflection input, "Minha biblioteca" semantics, current Percurso semantics, teacher student grouping and teacher information architecture), recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`.
+- product decisions surfaced by the UX prototype (independent learner entitlement/access model, learner level, written reflection input, "Minha biblioteca" semantics, current Percurso semantics, teacher student grouping and teacher information architecture), recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`.
 
 A downstream implementation agent must not resolve these silently.
 
