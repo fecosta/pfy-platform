@@ -93,7 +93,8 @@ Verify:
 
 ### Active
 
-SPEC-002 has been fully reconciled with the current identity, authentication, migration-continuity, and self-registration decisions and is implementation-ready pending explicit lifecycle activation.
+- `resources/specs/active/002-identity-authentication.md`
+- SPEC-002 has been fully reconciled with the current identity, authentication, migration-continuity, and self-registration decisions and is implementation-ready pending explicit lifecycle activation.
 
 ### Planned roadmap
 
