@@ -84,12 +84,16 @@ Verify:
 
 ## Current state
 
-### Active
+### Completed
 
 - **SPEC-001 — Application Foundation**
-  - `active/001-application-foundation.md`
+  - `completed/001-application-foundation.md`
   - Establish the initial application and engineering foundation.
   - Does not implement PFY learning-domain behavior.
+
+### Active
+
+No specification is currently active. The next roadmap item must be reconciled and explicitly activated before implementation.
 
 ### Planned roadmap
 
@@ -110,7 +114,7 @@ The dependency-oriented planned roadmap is:
 13. **SPEC-014 — Legacy Learning Content Migration**
 14. **SPEC-015 — Optional Historical Learning Data Migration**
 
-Only SPEC-001 is currently active and implementation-ready.
+SPEC-001 is completed. No specification is currently active; the next roadmap item must be explicitly promoted after reconciliation.
 
 Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
 

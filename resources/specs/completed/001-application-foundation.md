@@ -1,6 +1,6 @@
 # SPEC-001 — Application Foundation
 
-**Status:** ACTIVE — IMPLEMENTATION READY  
+**Status:** COMPLETED — VALIDATED 2026-09-21 
 **Depends on:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`  
 **Does not depend on:** H5P runtime implementation, billing, organizations, teacher-student relationships, legacy migration  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md` and applicable accepted ADRs
@@ -282,52 +282,52 @@ SPEC-001 is complete only when all applicable criteria are evidenced.
 
 ### Repository/application
 
-- [ ] Production application exists in the repository.
-- [ ] Next.js and TypeScript versions are explicit and locked through the package manager lockfile.
-- [ ] Application runs locally using documented steps.
-- [ ] Production build succeeds.
+- [x] Production application exists in the repository.
+- [x] Next.js and TypeScript versions are explicit and locked through the package manager lockfile.
+- [x] Application runs locally using documented steps.
+- [x] Production build succeeds.
 
 ### Configuration
 
-- [ ] Required environment variables are documented.
-- [ ] An example environment file contains no secrets.
-- [ ] Mandatory configuration is validated.
-- [ ] Server-only secrets cannot be imported/exposed accidentally through the client path.
+- [x] Required environment variables are documented.
+- [x] An example environment file contains no secrets.
+- [x] Mandatory configuration is validated.
+- [x] Server-only secrets cannot be imported/exposed accidentally through the client path.
 
 ### Supabase/database
 
-- [ ] Application has an established server-side Supabase integration convention.
-- [ ] Database migrations are version-controlled.
-- [ ] A clean local/development database can apply the migration baseline successfully.
-- [ ] No speculative future-domain schema has been added.
+- [x] Application has an established server-side Supabase integration convention.
+- [x] Database migrations are version-controlled.
+- [x] A clean local/development database can apply the migration baseline successfully. Evidence: `supabase db reset --local` passed twice on 2026-09-19 using OrbStack and Supabase CLI 2.100.1.
+- [x] No speculative future-domain schema has been added.
 
 ### Quality
 
-- [ ] Formatting/linting command succeeds.
-- [ ] Type-check command succeeds.
-- [ ] Automated tests for the implemented foundation pass.
-- [ ] Production build passes.
-- [ ] CI runs the authoritative validation commands.
+- [x] Formatting/linting command succeeds.
+- [x] Type-check command succeeds.
+- [x] Automated tests for the implemented foundation pass.
+- [x] Production build passes.
+- [x] CI runs the authoritative validation commands.
 
 ### Security
 
-- [ ] No secrets or production credentials are committed.
-- [ ] Service-role credentials are server-only if used.
-- [ ] Health/readiness output does not expose sensitive information.
-- [ ] No broad authorization bypass is introduced for future work.
+- [x] No secrets or production credentials are committed.
+- [x] Service-role credentials are server-only if used.
+- [x] Health/readiness output does not expose sensitive information.
+- [x] No broad authorization bypass is introduced for future work.
 
 ### Documentation
 
-- [ ] Root README documents setup/run/validation.
-- [ ] Architecture documentation remains accurate.
-- [ ] SPEC-001 implementation choices that materially affect future specs are documented.
-- [ ] No approved product or architecture contract was silently changed.
+- [x] Root README documents setup/run/validation.
+- [x] Architecture documentation remains accurate.
+- [x] SPEC-001 implementation choices that materially affect future specs are documented.
+- [x] No approved product or architecture contract was silently changed.
 
 ### Deployment
 
-- [ ] Application is deployable using the documented target baseline.
-- [ ] Required environment configuration for deployment is documented.
-- [ ] Deployment does not require the H5P runtime yet.
+- [x] Application is deployable using the documented target baseline.
+- [x] Required environment configuration for deployment is documented.
+- [x] Deployment does not require the H5P runtime yet.
 
 ## 10. Implementation freedom
 
@@ -391,3 +391,14 @@ implementation
 + documentation reconciliation
 = completed
 ```
+
+## Closure evidence
+
+- Local runtime: OrbStack Docker context, Docker Engine 29.4.0.
+- Supabase CLI: 2.100.1.
+- Migration command: `supabase db reset --local`, passed twice from a clean local database.
+- Applied migration: `20260919000000_foundation_baseline.sql`.
+- Resulting PFY schema: no tables in `public`; `pgcrypto` is installed intentionally. Supabase-managed Auth, Storage, Realtime and supporting schemas are created by the local platform stack.
+- Local API connectivity: `GET http://127.0.0.1:54321/rest/v1/` returned HTTP 200 with the generated local public key.
+- Application verification: Next.js running with `.env.local` returned `{"status":"ok","service":"pfy-web"}` from `/api/health`.
+- No production credentials, legacy schema or PFY future-domain tables were introduced.

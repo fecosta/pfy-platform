@@ -6,7 +6,7 @@ PFY is a digital platform for teaching and learning Portuguese as a Foreign Lang
 
 ## Project status
 
-**Current lifecycle state:** architecture approved; product/architecture documentation reconciled; application foundation is the active implementation target.
+**Current lifecycle state:** architecture approved; product/architecture documentation reconciled; application foundation completed and validated.
 
 The production codebase is being built from scratch.
 
@@ -107,15 +107,80 @@ Only one lifecycle state should describe a spec at a time.
 
 Do not implement directly from `planned/`.
 
-## Current implementation target
+## Foundation status
 
-The current active specification is:
+SPEC-001 is completed and recorded at:
 
-- [`SPEC-001 — Application Foundation`](resources/specs/active/001-application-foundation.md)
+- [`SPEC-001 — Application Foundation`](resources/specs/completed/001-application-foundation.md)
 
 SPEC-001 establishes the technical and engineering foundation only.
 
-Learning content, H5P production integration, Attempts, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations belong to later bounded specifications.
+Learning content, H5P production integration, Attempts, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations remain future bounded specifications. No later specification is active until explicitly promoted.
+
+## Application development
+
+SPEC-001 provides the initial Next.js application baseline. It intentionally does not implement
+PFY learning or account features.
+
+### Requirements
+
+- Node.js 22.x
+- npm 10.x or newer
+- A Supabase project for runtime checks that use the server client
+
+### Setup and run
+
+```sh
+npm ci
+cp .env.example .env.local
+# replace the two placeholders in .env.local with the Supabase project URL and anon key
+npm run dev
+```
+
+Open `http://localhost:3000`. The health endpoint is available at
+`http://localhost:3000/api/health`; it returns `503` when required configuration is absent and
+never includes credential values in its response.
+
+### Validation
+
+```sh
+npm run format
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e
+```
+
+The E2E command requires the Playwright browser installation (`npx playwright install chromium`)
+on a new machine. CI installs Chromium and runs the browser check alongside the deterministic
+static checks, unit tests and production build without requiring Supabase credentials.
+
+### Database and deployment
+
+The repository uses the official Supabase CLI workflow under `supabase/`. OrbStack or Docker
+Desktop must provide a working Docker-compatible runtime, and the Supabase CLI must be installed.
+
+```sh
+npm run supabase:start
+supabase status
+npm run supabase:reset
+npm run supabase:stop
+```
+
+`supabase db reset --local` recreates the local database and applies every migration from zero.
+The current baseline is under `supabase/migrations/`; it creates only the `pgcrypto` extension and
+no PFY domain tables. Seed loading is disabled because SPEC-001 defines no seed data. Future
+specifications own their domain migrations.
+
+For local application use, copy the API URL and anon/publishable key emitted by `supabase status`
+into the ignored `.env.local` using the names in `.env.example`. Never copy the local service-role
+or secret key into committed files or browser-visible configuration. Stop the stack when it is not
+needed with `npm run supabase:stop`.
+
+The Next.js app can be deployed to Vercel or an equivalent Next.js platform. Configure
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in the deployment environment. Do
+not configure a Supabase service-role key in this application baseline or expose one to a browser.
 
 ## Source-of-truth principle
 
