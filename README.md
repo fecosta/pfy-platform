@@ -169,9 +169,9 @@ npm run supabase:stop
 ```
 
 `supabase db reset --local` recreates the local database and applies every migration from zero.
-The current baseline is under `supabase/migrations/`; it creates only the `pgcrypto` extension and
-no PFY domain tables. Seed loading is disabled because SPEC-001 defines no seed data. Future
-specifications own their domain migrations.
+The current migrations include the SPEC-002 Phase 1 identity/profile foundation; later domain tables
+remain owned by their future specifications. Seed loading is disabled because the active identity
+phase defines no seed data.
 
 For local application use, copy the API URL and anon/publishable key emitted by `supabase status`
 into the ignored `.env.local` using the names in `.env.example`. Never copy the local service-role
