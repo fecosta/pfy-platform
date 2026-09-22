@@ -1,4 +1,14 @@
-export default function HomePage() {
+import { redirect } from "next/navigation";
+import type { Route } from "next";
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ code?: string }>;
+}) {
+  const { code } = await searchParams;
+  if (code) redirect(`/auth/callback?code=${encodeURIComponent(code)}` as Route);
+
   return (
     <main className="shell">
       <p className="eyebrow">Portuguese for You</p>

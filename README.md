@@ -119,8 +119,14 @@ Learning content, H5P production integration, Attempts, authoring, teacher-stude
 
 ## Application development
 
-SPEC-001 provides the initial Next.js application baseline. It intentionally does not implement
-PFY learning or account features.
+SPEC-001 provides the initial Next.js application baseline. SPEC-002 Phase 2 adds the server-side
+Magic Link/session foundation without implementing the final progressive registration UX.
+
+The bounded authentication surfaces are `/login`, `/auth/callback`, `/protected`, and the
+server-side logout/request-link handlers under `/api/auth/`. Runtime identity reconciliation
+requires the server-only `PFY_SUPABASE_SERVICE_ROLE_KEY`; it must never be exposed through a
+`NEXT_PUBLIC_*` variable. Unknown emails receive an explicit registration-required state and are
+not provisioned until the Phase 3 registration flow.
 
 ### Requirements
 
