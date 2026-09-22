@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { callbackUrl, safeRedirectPath } from "@/lib/auth/redirects";
 import { authRequestLimiter } from "@/lib/auth/rate-limit";
-import { loginEmailExists } from "@/lib/identity/server";
+import { loginEmailStatus } from "@/lib/identity/server";
 import { normalizeEmail } from "@/lib/identity/email";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -32,7 +32,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (!(await loginEmailExists(email))) {
+    const identity = await loginEmailStatus(email);
+    if (!identity.exists) {
       if (isFormSubmission) {
         return NextResponse.redirect(new URL("/auth/registration-required", request.url), 303);
       }
@@ -49,6 +50,7 @@ export async function POST(request: Request) {
         emailRedirectTo: localOrigin
           ? new URL("/", request.url).toString()
           : callbackUrl(origin, safeRedirectPath(parsed.data.next)),
+        shouldCreateUser: !identity.authLinked,
       },
     });
     if (error)

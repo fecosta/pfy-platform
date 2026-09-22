@@ -119,14 +119,14 @@ Learning content, H5P production integration, Attempts, authoring, teacher-stude
 
 ## Application development
 
-SPEC-001 provides the initial Next.js application baseline. SPEC-002 Phase 2 adds the server-side
-Magic Link/session foundation without implementing the final progressive registration UX.
+SPEC-001 provides the initial Next.js application baseline. SPEC-002 provides the server-side
+Magic Link/session foundation and the progressive email-first registration experience.
 
 The bounded authentication surfaces are `/login`, `/auth/callback`, `/protected`, and the
-server-side logout/request-link handlers under `/api/auth/`. Runtime identity reconciliation
+server-side logout/request-link/register handlers under `/api/auth/`. Runtime identity reconciliation
 requires the server-only `PFY_SUPABASE_SERVICE_ROLE_KEY`; it must never be exposed through a
-`NEXT_PUBLIC_*` variable. Unknown emails receive an explicit registration-required state and are
-not provisioned until the Phase 3 registration flow.
+`NEXT_PUBLIC_*` variable. Unknown emails progressively reveal first and last name fields and are
+not provisioned until registration is submitted in the same `/login` flow.
 
 The explicit live Phase 2 browser gate is `npm run test:auth:e2e`. It requires
 `PFY_SUPABASE_URL`, `PFY_SUPABASE_ANON_KEY`, `PFY_SUPABASE_SERVICE_ROLE_KEY`, and

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  loginEmailExists: vi.fn(),
+  loginEmailStatus: vi.fn(),
   signInWithOtp: vi.fn(),
 }));
 
-vi.mock("@/lib/identity/server", () => ({ loginEmailExists: mocks.loginEmailExists }));
+vi.mock("@/lib/identity/server", () => ({ loginEmailStatus: mocks.loginEmailStatus }));
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(async () => ({ auth: { signInWithOtp: mocks.signInWithOtp } })),
 }));
@@ -23,7 +23,10 @@ function request(email: string, ip: string): Request {
 describe("request-link abuse boundary", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.loginEmailExists.mockImplementation(async (email: string) => email.startsWith("known"));
+    mocks.loginEmailStatus.mockImplementation(async (email: string) => ({
+      exists: email.startsWith("known"),
+      authLinked: email.startsWith("known"),
+    }));
     mocks.signInWithOtp.mockResolvedValue({ error: null });
   });
 
@@ -40,7 +43,17 @@ describe("request-link abuse boundary", () => {
     expect(knownResponses[5].status).toBe(429);
     expect(unknownResponses[5].status).toBe(429);
     expect(await knownResponses[5].json()).toEqual(await unknownResponses[5].json());
-    expect(mocks.loginEmailExists).toHaveBeenCalledTimes(10);
+    expect(mocks.loginEmailStatus).toHaveBeenCalledTimes(10);
     expect(mocks.signInWithOtp).toHaveBeenCalledTimes(5);
+    expect(mocks.signInWithOtp.mock.calls[0][0].options.shouldCreateUser).toBe(false);
+  });
+
+  it("allows a pre-authenticated PFY identity to activate its Auth identity", async () => {
+    mocks.loginEmailStatus.mockResolvedValue({ exists: true, authLinked: false });
+
+    const response = await POST(request("preauth-activation@example.com", "192.0.2.40"));
+
+    expect(response.status).toBe(200);
+    expect(mocks.signInWithOtp.mock.calls[0][0].options.shouldCreateUser).toBe(true);
   });
 });

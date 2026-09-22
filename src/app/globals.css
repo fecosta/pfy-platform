@@ -1,6 +1,6 @@
 :root {
-  background: #f5f0e8;
-  color: #1d2925;
+  background: #faf7f2;
+  color: #172026;
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -19,6 +19,117 @@ body {
   align-content: center;
   margin: 0 auto;
   padding: 2rem;
+}
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1fr);
+  gap: 4rem;
+  align-items: center;
+  min-height: 100svh;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.auth-intro h1 {
+  max-width: 8ch;
+}
+
+.auth-form,
+.auth-confirmation {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 440px;
+  padding: 2rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 1.5rem 3rem rgb(23 32 38 / 8%);
+}
+
+.auth-form label {
+  margin-top: 0.35rem;
+  font-weight: 700;
+}
+
+.auth-form input {
+  min-height: 3.25rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #9ca3af;
+  border-radius: 0.5rem;
+  color: #172026;
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+.auth-form input:focus-visible,
+.auth-form button:focus-visible,
+.auth-confirmation button:focus-visible {
+  outline: 3px solid #55a5dc;
+  outline-offset: 2px;
+}
+
+.auth-form button,
+.auth-confirmation button {
+  min-height: 3.25rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: #de5148;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.auth-form button:hover,
+.auth-confirmation button:hover {
+  background: #bb3f39;
+}
+
+.auth-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.secondary-button {
+  background: transparent !important;
+  color: #173b57 !important;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.form-context,
+.auth-confirmation p {
+  line-height: 1.6;
+}
+
+.form-error {
+  margin: 0.25rem 0;
+  color: #7f3330;
+  font-weight: 700;
+}
+
+.auth-confirmation h2 {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 2rem;
+}
+
+@media (max-width: 700px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-content: center;
+  }
+
+  .auth-form,
+  .auth-confirmation {
+    padding: 1.5rem;
+  }
 }
 
 .eyebrow {

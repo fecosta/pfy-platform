@@ -32,10 +32,39 @@ function createIdentityAdminClient() {
 }
 
 export async function loginEmailExists(email: string): Promise<boolean> {
+  return (await loginEmailStatus(email)).exists;
+}
+
+export async function loginEmailStatus(email: string): Promise<{
+  exists: boolean;
+  authLinked: boolean;
+}> {
   const admin = createIdentityAdminClient();
-  const { data, error } = await admin.rpc("pfy_login_email_exists", { submitted_email: email });
+  const { data, error } = await admin
+    .from("user_emails")
+    .select("users(auth_user_id)")
+    .eq("normalized_email", email)
+    .maybeSingle();
   if (error) throw new Error("Unable to evaluate login email");
-  return data === true;
+  const users = data?.users;
+  const user = Array.isArray(users) ? users[0] : users;
+  return { exists: Boolean(data), authLinked: Boolean(user?.auth_user_id) };
+}
+
+export async function provisionIdentity(
+  email: string,
+  firstName: string,
+  lastName: string,
+): Promise<string> {
+  const admin = createIdentityAdminClient();
+  const { data, error } = await admin.rpc("pfy_provision_identity", {
+    requested_email: email,
+    requested_first_name: firstName,
+    requested_last_name: lastName,
+  });
+
+  if (error || typeof data !== "string") throw new Error("Unable to provision PFY identity");
+  return data;
 }
 
 export async function reconcileAuthenticatedIdentity(authUserId: string, email: string) {
