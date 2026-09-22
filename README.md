@@ -152,6 +152,16 @@ npm run build
 npm run test:e2e
 ```
 
+The live SPEC-002 identity/RLS suite is an explicit local gate and requires a running local
+Supabase instance plus `PFY_SUPABASE_URL`, `PFY_SUPABASE_ANON_KEY` and the server-only
+`PFY_SUPABASE_SERVICE_ROLE_KEY` environment variables:
+
+```sh
+npm run test:identity:integration
+```
+
+Do not expose the service-role key to browser code or `NEXT_PUBLIC_*` variables.
+
 The E2E command requires the Playwright browser installation (`npx playwright install chromium`)
 on a new machine. CI installs Chromium and runs the browser check alongside the deterministic
 static checks, unit tests and production build without requiring Supabase credentials.

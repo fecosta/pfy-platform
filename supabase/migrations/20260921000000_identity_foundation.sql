@@ -119,6 +119,7 @@ declare
   normalized text := public.pfy_normalize_email(requested_email);
   resolved_user_id uuid;
   auth_email text;
+  auth_email_confirmed_at timestamptz;
   existing_auth_user_id uuid;
 begin
   if normalized = '' or btrim(requested_first_name) = '' or btrim(requested_last_name) = '' then
@@ -130,8 +131,14 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(normalized, 0));
 
   if requested_auth_user_id is not null then
-    select email into auth_email from auth.users where id = requested_auth_user_id;
-    if auth_email is null or public.pfy_normalize_email(auth_email) <> normalized then
+    -- email_confirmed_at is Supabase Auth's confirmation state for email identity.
+    select email, email_confirmed_at
+    into auth_email, auth_email_confirmed_at
+    from auth.users
+    where id = requested_auth_user_id;
+    if auth_email is null
+       or auth_email_confirmed_at is null
+       or public.pfy_normalize_email(auth_email) <> normalized then
       raise exception using errcode = '22023', message = 'authenticated email does not match login email';
     end if;
   end if;
@@ -190,12 +197,15 @@ declare
   resolved_user_id uuid;
   linked_user_id uuid;
   auth_record_email text;
+  auth_email_confirmed_at timestamptz;
 begin
-  select email into auth_record_email
+  select email, email_confirmed_at
+  into auth_record_email, auth_email_confirmed_at
   from auth.users
   where id = authenticated_user_id;
 
   if auth_record_email is null
+     or auth_email_confirmed_at is null
      or public.pfy_normalize_email(auth_record_email) <> normalized then
     raise exception using errcode = '22023', message = 'authenticated email is not verified';
   end if;

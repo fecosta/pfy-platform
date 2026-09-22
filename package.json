@@ -11,6 +11,7 @@
     "format:write": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:identity:integration": "PFY_SUPABASE_INTEGRATION=1 vitest run tests/identity.integration.test.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "supabase:start": "supabase start",

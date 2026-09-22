@@ -15,9 +15,16 @@ describe.skipIf(!integrationEnabled)("identity foundation against local Supabase
     return value;
   }
 
-  async function createAuthFixture(email: string): Promise<{ id: string; client: SupabaseClient }> {
+  async function createAuthFixture(
+    email: string,
+    emailConfirmed = true,
+  ): Promise<{ id: string; client: SupabaseClient }> {
     const password = "Phase1-test-password-123!";
-    const result = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+    const result = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: emailConfirmed,
+    });
     if (result.error || !result.data.user)
       throw result.error ?? new Error("Auth fixture was not created");
     createdAuthUsers.push(result.data.user.id);
@@ -26,8 +33,10 @@ describe.skipIf(!integrationEnabled)("identity foundation against local Supabase
       requireEnv("PFY_SUPABASE_URL"),
       requireEnv("PFY_SUPABASE_ANON_KEY"),
     );
-    const signIn = await client.auth.signInWithPassword({ email, password });
-    if (signIn.error) throw signIn.error;
+    if (emailConfirmed) {
+      const signIn = await client.auth.signInWithPassword({ email, password });
+      if (signIn.error) throw signIn.error;
+    }
     return { id: result.data.user.id, client };
   }
 
@@ -101,6 +110,12 @@ describe.skipIf(!integrationEnabled)("identity foundation against local Supabase
       .update({ first_name: "Updated" })
       .eq("user_id", ownerId);
     expect(ownUpdate.error).toBeNull();
+    const persistedOwnProfile = await admin
+      .from("profiles")
+      .select("first_name")
+      .eq("user_id", ownerId)
+      .single();
+    expect(persistedOwnProfile.data?.first_name).toBe("Updated");
 
     const crossUpdate = await owner.client
       .from("profiles")
@@ -108,24 +123,51 @@ describe.skipIf(!integrationEnabled)("identity foundation against local Supabase
       .eq("user_id", otherId);
     expect(crossUpdate.error).toBeNull();
     expect(crossUpdate.data).toBeNull();
+    const persistedOtherProfile = await admin
+      .from("profiles")
+      .select("first_name")
+      .eq("user_id", otherId)
+      .single();
+    expect(persistedOtherProfile.data?.first_name).toBe("Phase");
 
     const linkageUpdate = await owner.client
       .from("users")
       .update({ auth_user_id: other.id })
       .eq("id", ownerId);
     expect(linkageUpdate.error).toBeTruthy();
+    const persistedLinkage = await admin
+      .from("users")
+      .select("auth_user_id")
+      .eq("id", ownerId)
+      .single();
+    expect(persistedLinkage.data?.auth_user_id).toBe(owner.id);
 
     const emailUpdate = await owner.client
       .from("user_emails")
       .update({ email: "changed@example.com" })
       .eq("user_id", ownerId);
     expect(emailUpdate.error).toBeTruthy();
+    const persistedEmail = await admin
+      .from("user_emails")
+      .select("email,normalized_email")
+      .eq("user_id", ownerId)
+      .single();
+    expect(persistedEmail.data).toEqual({
+      email: ownerEmail,
+      normalized_email: ownerEmail,
+    });
 
     const provenanceUpdate = await owner.client
       .from("users")
       .update({ legacy_wp_user_id: 12345 })
       .eq("id", ownerId);
     expect(provenanceUpdate.error).toBeTruthy();
+    const persistedProvenance = await admin
+      .from("users")
+      .select("legacy_wp_user_id")
+      .eq("id", ownerId)
+      .single();
+    expect(persistedProvenance.data?.legacy_wp_user_id).toBeNull();
   });
 
   it("provisions concurrently and links a pre-auth identity safely", async () => {
@@ -182,5 +224,38 @@ describe.skipIf(!integrationEnabled)("identity foundation against local Supabase
     expect(resolved.error).toBeNull();
     if (!resolved.data) throw new Error("Linked fixture was not found");
     expect(resolved.data).toEqual({ id: preauthId, auth_user_id: activation.id });
+  });
+
+  it("rejects unconfirmed Auth email identities without changing PFY state", async () => {
+    const email = `unconfirmed-${Date.now()}@example.com`;
+    const preauthId = await provision(email);
+    const unconfirmed = await createAuthFixture(email, false);
+
+    const link = await admin.rpc("pfy_link_authenticated_identity", {
+      authenticated_user_id: unconfirmed.id,
+      authenticated_email: email,
+    });
+    expect(link.error).toBeTruthy();
+
+    const provisioning = await admin.rpc("pfy_provision_identity", {
+      requested_email: email,
+      requested_first_name: "Phase",
+      requested_last_name: "Tester",
+      requested_auth_user_id: unconfirmed.id,
+    });
+    expect(provisioning.error).toBeTruthy();
+
+    const persistedUser = await admin
+      .from("users")
+      .select("id,auth_user_id")
+      .eq("id", preauthId)
+      .single();
+    expect(persistedUser.data).toEqual({ id: preauthId, auth_user_id: null });
+
+    const emailOwners = await admin
+      .from("user_emails")
+      .select("user_id")
+      .eq("normalized_email", email);
+    expect(emailOwners.data).toEqual([{ user_id: preauthId }]);
   });
 });
