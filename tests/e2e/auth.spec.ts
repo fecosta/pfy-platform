@@ -38,7 +38,7 @@ test("Magic Link establishes, persists, and logs out an authenticated PFY sessio
     const appOrigin = new URL(page.url()).origin;
     await page.getByLabel("E-mail").fill(email);
     await page.getByRole("button", { name: "Continuar" }).click();
-    await expect(page.getByRole("heading", { name: "Verifique o seu e-mail" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Verifique seu e-mail" })).toBeVisible();
 
     await expect
       .poll(async () =>
@@ -109,17 +109,17 @@ test("new email progressively registers and completes the same Magic Link journe
     const appOrigin = new URL(page.url()).origin;
     await page.getByLabel("E-mail").fill(email);
     await page.getByRole("button", { name: "Continuar" }).click();
-    await expect(page.getByLabel("Nome")).toBeFocused();
+    await expect(page.getByLabel("Nome", { exact: true })).toBeFocused();
     await expect(page.getByLabel("E-mail")).toHaveValue(email);
     const authUsersBeforeRegistration = await admin.auth.admin.listUsers({
       page: 1,
       perPage: 1000,
     });
     expect(authUsersBeforeRegistration.data.users.some((user) => user.email === email)).toBe(false);
-    await page.getByLabel("Nome").fill("Novo");
-    await page.getByLabel("Apelido").fill("Utilizador");
-    await page.getByRole("button", { name: "Registar e enviar link" }).click();
-    await expect(page.getByRole("heading", { name: "Verifique o seu e-mail" })).toBeVisible();
+    await page.getByLabel("Nome", { exact: true }).fill("Novo");
+    await page.getByLabel("Sobrenome").fill("Silva");
+    await page.getByRole("button", { name: "Cadastrar e enviar link" }).click();
+    await expect(page.getByRole("heading", { name: "Verifique seu e-mail" })).toBeVisible();
 
     const emailMessage = await findMagicLink(request, emailCaptureUrl, email, url);
     await page.goto(emailMessage);
@@ -139,7 +139,7 @@ test("new email progressively registers and completes the same Magic Link journe
       .select("first_name,last_name")
       .eq("user_id", pfyUserId)
       .single();
-    expect(profile.data).toEqual({ first_name: "Novo", last_name: "Utilizador" });
+    expect(profile.data).toEqual({ first_name: "Novo", last_name: "Silva" });
   } finally {
     const users = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
     const authUser = users.data.users.find((user) => user.email === email);

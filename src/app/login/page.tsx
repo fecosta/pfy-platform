@@ -11,7 +11,7 @@ export default async function LoginPage({
       <div className="auth-intro">
         <p className="eyebrow">Portuguese for You ~</p>
         <h1>Entre no PFY</h1>
-        <p className="lede">Use o seu e-mail para entrar ou criar o seu acesso.</p>
+        <p className="lede">Use seu e-mail para entrar ou criar seu acesso.</p>
       </div>
       <LoginForm next={params.next ?? "/protected"} />
     </main>

@@ -21,13 +21,16 @@ export async function POST(request: Request) {
       ? await request.json()
       : Object.fromEntries((await request.formData()).entries());
   } catch {
-    return NextResponse.json({ error: "Não foi possível processar o pedido." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Não foi possível processar a solicitação." },
+      { status: 400 },
+    );
   }
 
   const parsed = registrationSchema.safeParse(input);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Indique um e-mail, nome e apelido válidos." },
+      { error: "Indique um e-mail, nome e sobrenome válidos." },
       { status: 400 },
     );
   }
@@ -35,7 +38,7 @@ export async function POST(request: Request) {
   const email = normalizeEmail(parsed.data.email);
   if (!authRequestLimiter(request, email).allowed) {
     return NextResponse.json(
-      { error: "Foram feitos muitos pedidos. Aguarde alguns minutos e tente novamente." },
+      { error: "Muitas tentativas. Aguarde alguns minutos e tente novamente." },
       { status: 429 },
     );
   }
@@ -51,7 +54,7 @@ export async function POST(request: Request) {
     return sendMagicLink(request, email, parsed.data.next, true);
   } catch {
     return NextResponse.json(
-      { error: "Não foi possível concluir o registo. Tente novamente." },
+      { error: "Não foi possível concluir o cadastro. Tente novamente." },
       { status: 503 },
     );
   }

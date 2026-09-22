@@ -36,7 +36,7 @@ export function LoginForm({ next }: { next: string }) {
         setError(body.error ?? "Não foi possível continuar. Tente novamente.");
       }
     } catch {
-      setError("Não foi possível continuar. Verifique a sua ligação e tente novamente.");
+      setError("Não foi possível continuar. Verifique sua conexão e tente novamente.");
     } finally {
       setBusy(false);
     }
@@ -56,10 +56,10 @@ export function LoginForm({ next }: { next: string }) {
       if (response.ok && body.sent) {
         setState("sent");
       } else {
-        setError(body.error ?? "Não foi possível concluir o registo. Tente novamente.");
+        setError(body.error ?? "Não foi possível concluir o cadastro. Tente novamente.");
       }
     } catch {
-      setError("Não foi possível concluir o registo. Verifique a sua ligação e tente novamente.");
+      setError("Não foi possível concluir o cadastro. Verifique sua conexão e tente novamente.");
     } finally {
       setBusy(false);
     }
@@ -68,8 +68,8 @@ export function LoginForm({ next }: { next: string }) {
   if (state === "sent") {
     return (
       <section className="auth-confirmation" aria-labelledby="confirmation-title">
-        <h2 id="confirmation-title">Verifique o seu e-mail</h2>
-        <p role="status">Enviámos um link de acesso para {email}.</p>
+        <h2 id="confirmation-title">Verifique seu e-mail</h2>
+        <p role="status">Enviamos um link de acesso para {email}.</p>
         <p>Abra o link nesse e-mail para entrar no PFY.</p>
         <button type="button" className="secondary-button" onClick={() => setState("email")}>
           Usar outro e-mail
@@ -88,7 +88,7 @@ export function LoginForm({ next }: { next: string }) {
         noValidate
       >
         <p className="form-context">
-          Vamos criar o seu acesso. O link será enviado depois do registo.
+          Vamos criar seu acesso. O link de acesso será enviado após o cadastro.
         </p>
         <label htmlFor="first-name">Nome</label>
         <input
@@ -100,7 +100,7 @@ export function LoginForm({ next }: { next: string }) {
           autoComplete="given-name"
           required
         />
-        <label htmlFor="last-name">Apelido</label>
+        <label htmlFor="last-name">Sobrenome</label>
         <input
           id="last-name"
           name="lastName"
@@ -117,7 +117,7 @@ export function LoginForm({ next }: { next: string }) {
           </p>
         )}
         <button type="submit" disabled={busy}>
-          {busy ? "A enviar..." : "Registar e enviar link"}
+          {busy ? "Enviando..." : "Cadastrar e enviar link"}
         </button>
         <button
           type="button"
