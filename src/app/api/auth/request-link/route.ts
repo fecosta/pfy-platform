@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { callbackUrl, safeRedirectPath } from "@/lib/auth/redirects";
+import { authRequestLimiter } from "@/lib/auth/rate-limit";
 import { loginEmailExists } from "@/lib/identity/server";
 import { normalizeEmail } from "@/lib/identity/email";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -26,6 +27,10 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid request" }, { status: 400 });
 
   const email = normalizeEmail(parsed.data.email);
+  if (!authRequestLimiter(request, email).allowed) {
+    return NextResponse.json({ error: "Too many authentication requests" }, { status: 429 });
+  }
+
   try {
     if (!(await loginEmailExists(email))) {
       if (isFormSubmission) {

@@ -128,6 +128,14 @@ requires the server-only `PFY_SUPABASE_SERVICE_ROLE_KEY`; it must never be expos
 `NEXT_PUBLIC_*` variable. Unknown emails receive an explicit registration-required state and are
 not provisioned until the Phase 3 registration flow.
 
+The explicit live Phase 2 browser gate is `npm run test:auth:e2e`. It requires
+`PFY_SUPABASE_URL`, `PFY_SUPABASE_ANON_KEY`, `PFY_SUPABASE_SERVICE_ROLE_KEY`, and
+`PFY_SUPABASE_INBUCKET_URL`, which must point to the local email-capture HTTP API. The general
+`npm run test:e2e` suite may skip the live auth test when those variables are absent. The request-link
+boundary applies bounded process-local defense-in-depth throttling keyed by hashed email and client
+signal; distributed deployments must also configure shared edge/platform abuse controls. Local
+Supabase ports are environment-specific and are not repository contracts.
+
 ### Requirements
 
 - Node.js 22.x
