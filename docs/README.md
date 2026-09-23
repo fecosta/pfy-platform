@@ -222,6 +222,11 @@ Only promote a SPEC to `active/` once dependencies, product contracts, data sema
 
 ## Current implementation state
 
-SPEC-001 — Application Foundation is the current active bounded implementation unit.
+SPEC-001 — Application Foundation and SPEC-002 — Identity & Authentication are completed bounded
+implementation units. The current application includes the canonical PFY identity foundation and
+passwordless Magic Link authentication with progressive registration.
 
-The learning-domain SPECs remain planned and must be reconciled with `PRODUCT_DEFINITION.md`, `ARCHITECTURE.md` and ADR-002 before activation.
+There is currently no active SPEC. SPEC-003 — Authorization Foundation is next in the planned
+roadmap and must be reconciled with `PRODUCT_DEFINITION.md`, `ARCHITECTURE.md` and applicable ADRs
+before activation. The remaining learning-domain SPECs remain planned and require the same
+activation-level reconciliation.

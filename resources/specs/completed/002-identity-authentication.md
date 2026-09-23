@@ -1,6 +1,6 @@
 # SPEC-002 — Identity & Authentication
 
-**Status:** ACTIVE — IMPLEMENTATION READY  
+**Status:** COMPLETED — VALIDATED 2026-09-23
 **Depends on:** SPEC-001 — Application Foundation  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, accepted ADRs, approved product decisions
 
@@ -1348,4 +1348,34 @@ Confirmed decisions:
 - First-auth linking of a pre-provisioned PFY User requires the authenticated Supabase email to match the PFY primary login email.
 - Email-change workflows are outside SPEC-002.
 
-**Implementation state: IMPLEMENTATION READY.**
+**Implementation state: COMPLETED and validated.**
+
+## 34. Closure Evidence
+
+SPEC-002 was implemented in three reviewed phases: identity foundation, authentication/session
+foundation and progressive registration UX. The final merged baseline is `3564892`.
+
+Verified closure evidence includes:
+
+- application-owned canonical PFY User, Profile and protected primary login email;
+- normalized-email uniqueness, concurrency-safe provisioning and verified first-auth linking;
+- passwordless Magic Link, PKCE callback, SSR session persistence/refresh, logout and protected
+  surface behavior;
+- bounded email-existence disclosure, browser identity protections, RLS positive/negative coverage
+  and no implicit authorization or entitlement;
+- migrated/pre-authentication activation and complete new-user progressive registration journeys.
+
+Validation completed with:
+
+- `npm run validate`;
+- `npm run supabase:reset`;
+- `npm run test:identity:integration`;
+- `npm run test:auth:e2e`;
+- `npm run test:e2e`.
+
+The implementation received independent review and final corrective review before merge. Hosted
+validation was not required by the repository delivery process; local Supabase integration and
+email-capture E2E gates were the established authentication validation gates.
+
+Authorization, organizations, relationships, licensing, entitlements, billing and learning-domain
+behavior remain outside this completed specification and belong to future specifications.

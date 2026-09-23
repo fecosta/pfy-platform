@@ -34,6 +34,17 @@ The architecture deliberately does not reproduce WordPress plugin boundaries.
 - PFY domain users live in application-owned tables linked to authentication identities.
 - Legacy WordPress password hashes are not part of the new PFY domain.
 
+The current application implements the identity and authentication foundation through:
+
+- application-owned canonical PFY Users, Profiles and primary login emails;
+- optional verified Supabase Auth linkage, including pre-authentication migrated users;
+- passwordless Magic Link authentication;
+- PKCE callback and SSR session-cookie handling;
+- server-side resolution of the authenticated request to one canonical PFY User.
+
+Authentication establishes identity only. Authorization and entitlement remain separate future
+concerns.
+
 ### Authorization
 
 - Relationship-aware server-side authorization.

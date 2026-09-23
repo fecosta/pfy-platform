@@ -91,16 +91,18 @@ Verify:
   - Establish the initial application and engineering foundation.
   - Does not implement PFY learning-domain behavior.
 
+- **SPEC-002 — Identity & Authentication**
+  - `completed/002-identity-authentication.md`
+  - Establishes canonical PFY identity, passwordless Magic Link authentication, SSR sessions,
+    verified identity linking and progressive email-first registration.
+
 ### Active
 
-- **SPEC-002 — Identity & Authentication**
-  - `active/002-identity-authentication.md`
-  - Fully reconciled with the current identity, authentication, migration-continuity, and self-registration decisions.
-  - **State:** ACTIVE — IMPLEMENTATION READY.
+No specification is currently active.
 
 ### Planned roadmap
 
-The dependency-oriented planned roadmap after the current active SPEC is:
+The dependency-oriented planned roadmap after the completed foundation and identity work is:
 
 1. **SPEC-003 — Authorization Foundation**
 2. **SPEC-004 — Learning Content Model, Percursos & Shared Library**
@@ -116,7 +118,8 @@ The dependency-oriented planned roadmap after the current active SPEC is:
 12. **SPEC-014 — Legacy Learning Content Migration**
 13. **SPEC-015 — Optional Historical Learning Data Migration**
 
-SPEC-001 is completed. SPEC-002 is the current active implementation unit.
+SPEC-001 and SPEC-002 are completed. SPEC-003 is next in the planned roadmap but is not active or
+implementation-ready until its activation preflight is completed.
 
 Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
 
@@ -135,7 +138,8 @@ Several planned learning-domain SPECs were drafted before the composed Activity 
 | SPEC-008 | Learning-history wording aligned with canonical evidence layers; full reconciliation still required. |
 | SPEC-014 | Stale H5P-to-Activity mapping corrected to H5P-to-Exercise; full reconciliation still required; Activity-composition and Syllabus/Percurso migration remain `DECISION REQUIRED`. |
 
-SPEC-002 has been fully reconciled and explicitly activated as the current implementation unit.
+SPEC-002 was fully reconciled, implemented, independently reviewed, validated and closed. No SPEC
+is currently active.
 
 The remaining planned SPECs (003, 009–013, 015) have not yet received equivalent activation-level reconciliation.
 
