@@ -1,7 +1,7 @@
 # Portuguese for You — Authoritative Documentation
 
 **Status:** CURRENT  
-**Last reconciled:** 2026-09-19
+**Last reconciled:** 2026-09-23
 
 This directory contains the durable product and architecture knowledge for the greenfield Portuguese for You (PFY) rebuild.
 
@@ -118,7 +118,7 @@ Current decisions include:
 
 Planned work includes:
 
-- physical database schema per active SPEC;
+- physical database schemas for domains that remain planned;
 - production H5P deployment configuration;
 - payment provider integration;
 - Activity authoring usability validation;
