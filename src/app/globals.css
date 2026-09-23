@@ -20,8 +20,11 @@
   --focus-ring-width: 3px;
   --focus-ring-offset: 2px;
   --radius-sm: 0.5rem;
-  --radius-md: 1rem;
-  --shadow-sm: 0 1.5rem 3rem rgb(23 32 38 / 8%);
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --shadow-sm: 0 2px 6px rgb(23 32 38 / 0.07);
+  --shadow-md: 0 8px 20px rgb(23 32 38 / 0.09);
+  --shadow-lg: 0 16px 40px rgb(23 32 38 / 0.12);
   background: var(--color-background-canvas);
   color: var(--color-text-primary);
   font-family: var(--font-product), system-ui, sans-serif;
@@ -66,9 +69,9 @@ body {
   max-width: 440px;
   padding: 2rem;
   border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--color-background-surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-lg);
 }
 
 .auth-form label {

@@ -158,7 +158,7 @@ export function LoginForm({ next }: { next: string }) {
         </p>
       )}
       <button type="submit" disabled={busy}>
-        {busy ? "A verificar..." : "Continuar"}
+        {busy ? "Verificando..." : "Continuar"}
       </button>
     </form>
   );
