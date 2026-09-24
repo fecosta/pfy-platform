@@ -1,6 +1,6 @@
 # SPEC-003 — Authorization Foundation
 
-**Status:** PLANNED — DECISION READY  
+**Status:** ACTIVE — IMPLEMENTATION READY
 **Depends on:** SPEC-002 — Identity & Authentication
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, completed SPEC-002 and applicable accepted ADRs
 
