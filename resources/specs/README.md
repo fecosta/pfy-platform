@@ -98,13 +98,16 @@ Verify:
 
 ### Active
 
-No specification is currently active.
+- SPEC-003 — Authorization Foundation
+  - active/003-authorization-foundation.md
+  - Reconciled with completed SPEC-002 and current authorization architecture.
+  - State: ACTIVE — IMPLEMENTATION READY.
 
 ### Planned roadmap
 
 The dependency-oriented planned roadmap after the completed foundation and identity work is:
 
-1. **SPEC-003 — Authorization Foundation**
+
 2. **SPEC-004 — Learning Content Model, Percursos & Shared Library**
 3. **SPEC-005 — H5P Runtime Production Integration**
 4. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
@@ -118,8 +121,7 @@ The dependency-oriented planned roadmap after the completed foundation and ident
 12. **SPEC-014 — Legacy Learning Content Migration**
 13. **SPEC-015 — Optional Historical Learning Data Migration**
 
-SPEC-001 and SPEC-002 are completed. SPEC-003 is next in the planned roadmap but is not active or
-implementation-ready until its activation preflight is completed.
+SPEC-001 and SPEC-002 are completed. SPEC-003 is the current active implementation unit.
 
 Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
 
@@ -138,10 +140,10 @@ Several planned learning-domain SPECs were drafted before the composed Activity 
 | SPEC-008 | Learning-history wording aligned with canonical evidence layers; full reconciliation still required. |
 | SPEC-014 | Stale H5P-to-Activity mapping corrected to H5P-to-Exercise; full reconciliation still required; Activity-composition and Syllabus/Percurso migration remain `DECISION REQUIRED`. |
 
-SPEC-002 was fully reconciled, implemented, independently reviewed, validated and closed. No SPEC
-is currently active.
+SPEC-002 was fully reconciled, implemented, independently reviewed, validated and closed.
+SPEC-003 has completed activation-level reconciliation and is the current active implementation unit.
 
-The remaining planned SPECs (003, 009–013, 015) have not yet received equivalent activation-level reconciliation.
+The remaining planned SPECs (009–013, 015) have not yet received equivalent activation-level reconciliation.
 
 Before activation, the contracts below must hold:
 
