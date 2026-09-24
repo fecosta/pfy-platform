@@ -1,6 +1,6 @@
 # SPEC-004 — Learning Content Model, Percursos & Shared Library
 
-**Status:** PLANNED — IMPLEMENTATION READY  
+**Status:** ACTIVE — IMPLEMENTATION READY
 **Depends on:** SPEC-003 — Authorization Foundation  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, `docs/ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md` and applicable accepted ADRs  
 **UX reference:** approved PFY prototype, subject to the authority boundaries defined in repository governance

@@ -101,23 +101,30 @@ Verify:
   - Establishes the verified canonical-user authorization context, explicit deny-by-default
     decisions, own-Profile enforcement and service-role isolation convention.
 
+### Active
+
+- **SPEC-004 — Learning Content Model, Percursos & Shared Library**
+  - `active/004-learning-content-model-percursos-shared-library.md`
+  - Establishes canonical Activity, Exercise, Percurso and shared-library foundations.
+  - State: ACTIVE — IMPLEMENTATION READY.
+
 ### Planned roadmap
 
 The dependency-oriented planned roadmap after the completed foundation and identity work is:
 
 
-1. **SPEC-004 — Learning Content Model, Percursos & Shared Library**
-2. **SPEC-005 — H5P Runtime Production Integration**
-3. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
-4. **SPEC-007 — Activity Authoring & H5P Content Workflow**
-5. **SPEC-008 — Teacher–Student Relationships & Monitoring**
-6. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
-7. **SPEC-010 — Organizations & Institutional Access**
-8. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
-9. **SPEC-012 — B2C Billing Integration**
-10. **SPEC-013 — Legacy User Migration**
-11. **SPEC-014 — Legacy Learning Content Migration**
-12. **SPEC-015 — Optional Historical Learning Data Migration**
+
+1. **SPEC-005 — H5P Runtime Production Integration**
+2. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
+3. **SPEC-007 — Activity Authoring & H5P Content Workflow**
+4. **SPEC-008 — Teacher–Student Relationships & Monitoring**
+5. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
+6. **SPEC-010 — Organizations & Institutional Access**
+7. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
+8. **SPEC-012 — B2C Billing Integration**
+9. **SPEC-013 — Legacy User Migration**
+10. **SPEC-014 — Legacy Learning Content Migration**
+11. **SPEC-015 — Optional Historical Learning Data Migration**
 
 SPEC-001, SPEC-002 and SPEC-003 are completed. No SPEC is currently active.
 
