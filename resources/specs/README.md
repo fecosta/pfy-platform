@@ -126,7 +126,7 @@ The dependency-oriented planned roadmap after the completed foundation and ident
 10. **SPEC-014 — Legacy Learning Content Migration**
 11. **SPEC-015 — Optional Historical Learning Data Migration**
 
-SPEC-001, SPEC-002 and SPEC-003 are completed. No SPEC is currently active.
+SPEC-001, SPEC-002 and SPEC-003 are completed. SPEC-004 is the current active implementation unit.
 
 Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
 
