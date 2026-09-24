@@ -108,18 +108,18 @@ Verify:
 The dependency-oriented planned roadmap after the completed foundation and identity work is:
 
 
-2. **SPEC-004 — Learning Content Model, Percursos & Shared Library**
-3. **SPEC-005 — H5P Runtime Production Integration**
-4. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
-5. **SPEC-007 — Activity Authoring & H5P Content Workflow**
-6. **SPEC-008 — Teacher–Student Relationships & Monitoring**
-7. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
-8. **SPEC-010 — Organizations & Institutional Access**
-9. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
-10. **SPEC-012 — B2C Billing Integration**
-11. **SPEC-013 — Legacy User Migration**
-12. **SPEC-014 — Legacy Learning Content Migration**
-13. **SPEC-015 — Optional Historical Learning Data Migration**
+1. **SPEC-004 — Learning Content Model, Percursos & Shared Library**
+2. **SPEC-005 — H5P Runtime Production Integration**
+3. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
+4. **SPEC-007 — Activity Authoring & H5P Content Workflow**
+5. **SPEC-008 — Teacher–Student Relationships & Monitoring**
+6. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
+7. **SPEC-010 — Organizations & Institutional Access**
+8. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
+9. **SPEC-012 — B2C Billing Integration**
+10. **SPEC-013 — Legacy User Migration**
+11. **SPEC-014 — Legacy Learning Content Migration**
+12. **SPEC-015 — Optional Historical Learning Data Migration**
 
 SPEC-001 and SPEC-002 are completed. SPEC-003 is the current active implementation unit.
 
