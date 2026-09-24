@@ -172,6 +172,16 @@ Activity
 
 The physical schema remains an implementation/specification decision but must preserve canonical identity, deterministic ordering, typed semantics, referential integrity, authoring/editing and safe rendering.
 
+The verified SPEC-004 implementation uses:
+
+- `activities` for canonical Activity UUIDs, public metadata and `draft`/`published`/`archived` lifecycle;
+- `activity_blocks` for typed, position-unique composition rows;
+- `exercises` for Activity-owned PFY Exercise UUIDs, with a composite ownership reference from Exercise blocks;
+- `syllabi` for canonical Syllabus/Percurso metadata and lifecycle;
+- `syllabus_activities` for position-unique, reusable Activity references and Percurso-specific pedagogical metadata.
+
+RLS and column grants expose only published Activities, Exercises and blocks, plus published Syllabi and memberships whose referenced Activity is also published, to ordinary `anon`/`authenticated` reads. No SPEC-004 content-management capability exists in the SPEC-003 authorization foundation, so non-published content has no ordinary read path and remains deny-by-default. Exercise implementation metadata is not granted to ordinary readers.
+
 ## 7. Exercise identity
 
 Canonical Exercise identity must be PFY-owned.

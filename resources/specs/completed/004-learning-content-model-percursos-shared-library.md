@@ -1,6 +1,6 @@
 # SPEC-004 — Learning Content Model, Percursos & Shared Library
 
-**Status:** ACTIVE — IMPLEMENTATION READY
+**Status:** COMPLETED — COHERENCE VERIFIED
 **Depends on:** SPEC-003 — Authorization Foundation  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, `docs/ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md` and applicable accepted ADRs  
 **UX reference:** approved PFY prototype, subject to the authority boundaries defined in repository governance
@@ -721,9 +721,9 @@ If activation-time repository evidence contradicts an authoritative contract, st
 
 ## 18. Activation Gate
 
-This SPEC is:
+This SPEC was:
 
-**PLANNED — IMPLEMENTATION READY**
+**ACTIVE — IMPLEMENTATION READY**
 
 It must remain under `resources/specs/planned/` while its dependency chain is incomplete or another primary bounded implementation unit remains active.
 
@@ -764,3 +764,12 @@ At that point:
 - move the file to `resources/specs/completed/`;
 - update `resources/specs/README.md`;
 - identify the next eligible planned SPEC for activation.
+
+## 20. Closure Evidence
+
+- Implemented the canonical Activity, ordered typed ActivityBlock, Exercise, Syllabus/Percurso and reusable membership schema in `supabase/migrations/20260924000000_learning_content_foundation.sql`.
+- Verified published-only RLS and column grants with positive/negative live integration tests in `tests/content.integration.test.ts`.
+- Implemented shared published Activity and Percurso read flows at `/explorar`, `/atividades/[id]`, `/percursos` and `/percursos/[id]`.
+- Verified malformed block rejection, canonical Exercise references and non-sequential pedagogical labels in `tests/content.test.ts`.
+- No H5P/Lumi mapping, Attempts, Results, progress, performance, favorites, assignments, licensing or future role semantics were introduced.
+- Validation evidence: `npm run validate`, `npm run supabase:reset`, live identity/content integration tests, and `npx playwright test tests/e2e/shell.spec.ts` passed with the local Supabase configuration active at validation time.

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import type { Route } from "next";
 
+import { ContentNav } from "@/app/content-nav";
+
 export default async function HomePage({
   searchParams,
 }: {
@@ -11,14 +13,14 @@ export default async function HomePage({
 
   return (
     <main className="shell">
+      <ContentNav />
       <p className="eyebrow">Portuguese for You</p>
-      <h1>The learning platform foundation is online.</h1>
+      <h1>Aprender português, com propósito.</h1>
       <p className="lede">
-        The operational shell is ready for the next PFY specifications. Learning content and account
-        features are intentionally not part of this baseline.
+        Explore atividades compostas e Percursos publicados na biblioteca compartilhada do PFY.
       </p>
-      <a className="status" href="/api/health">
-        Check application health <span aria-hidden="true">-&gt;</span>
+      <a className="status" href="/explorar">
+        Explorar atividades <span aria-hidden="true">-&gt;</span>
       </a>
     </main>
   );

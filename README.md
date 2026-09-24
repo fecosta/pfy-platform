@@ -7,7 +7,7 @@ PFY is a digital platform for teaching and learning Portuguese as a Foreign Lang
 ## Project status
 
 **Current lifecycle state:** architecture approved; product/architecture documentation reconciled;
-SPEC-001, SPEC-002 and SPEC-003 completed and validated.
+SPEC-001, SPEC-002, SPEC-003 and SPEC-004 completed and validated.
 
 The production codebase is being built from scratch.
 
@@ -126,7 +126,7 @@ It authorizes only the current own-Profile proof operation, preserves Profile RL
 service-role access isolated to privileged identity adapters. It does not introduce roles,
 relationships, entitlements or authorization schema.
 
-Learning content, H5P production integration, Attempts, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations remain future bounded specifications. No later specification is active until explicitly promoted.
+H5P production integration, Attempts, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations remain future bounded specifications. SPEC-004 establishes the canonical Activity, Exercise, Percurso and shared published-library content foundation. No later specification is active until explicitly promoted.
 
 ## Application development
 
@@ -204,9 +204,10 @@ npm run supabase:stop
 ```
 
 `supabase db reset --local` recreates the local database and applies every migration from zero.
-The current migrations include the SPEC-002 Phase 1 identity/profile foundation; later domain tables
-remain owned by their future specifications. Seed loading is disabled because the active identity
-phase defines no seed data.
+The current migrations include the SPEC-002 identity/profile foundation and the SPEC-004 learning
+content foundation. The content migration owns Activities, ordered Activity blocks, Exercise
+identities, Syllabus/Percurso records and ordered Activity membership. Seed loading is disabled
+because these bounded phases define no seed data.
 
 For local application use, copy the API URL and anon/publishable key emitted by `supabase status`
 into the ignored `.env.local` using the names in `.env.example`. Never copy the local service-role

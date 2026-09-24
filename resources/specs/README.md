@@ -101,12 +101,12 @@ Verify:
   - Establishes the verified canonical-user authorization context, explicit deny-by-default
     decisions, own-Profile enforcement and service-role isolation convention.
 
-### Active
+### Completed
 
 - **SPEC-004 — Learning Content Model, Percursos & Shared Library**
-  - `active/004-learning-content-model-percursos-shared-library.md`
+  - `completed/004-learning-content-model-percursos-shared-library.md`
   - Establishes canonical Activity, Exercise, Percurso and shared-library foundations.
-  - State: ACTIVE — IMPLEMENTATION READY.
+  - State: COMPLETED — COHERENCE VERIFIED.
 
 ### Planned roadmap
 
@@ -126,7 +126,7 @@ The dependency-oriented planned roadmap after the completed foundation and ident
 10. **SPEC-014 — Legacy Learning Content Migration**
 11. **SPEC-015 — Optional Historical Learning Data Migration**
 
-SPEC-001, SPEC-002 and SPEC-003 are completed. SPEC-004 is the current active implementation unit.
+SPEC-001, SPEC-002, SPEC-003 and SPEC-004 are completed. SPEC-005 is the next planned roadmap item and is not active.
 
 Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
 
