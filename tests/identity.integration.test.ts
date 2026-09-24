@@ -1,6 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { readAuthorizedProfile } from "@/lib/auth/authorization";
+
 const integrationEnabled = process.env.PFY_SUPABASE_INTEGRATION === "1";
 
 describe.skipIf(!integrationEnabled)("identity foundation against local Supabase", () => {
@@ -100,6 +102,23 @@ describe.skipIf(!integrationEnabled)("identity foundation against local Supabase
       .eq("user_id", ownerId);
     expect(ownRead.error).toBeNull();
     expect(ownRead.data).toHaveLength(1);
+
+    const authorizedProfile = await readAuthorizedProfile(
+      owner.client,
+      { pfyUserId: ownerId, authSubjectId: owner.id },
+      { type: "profile", ownerPfyUserId: ownerId },
+    );
+    expect(authorizedProfile.status).toBe("allowed");
+    if (authorizedProfile.status === "allowed") {
+      expect(authorizedProfile.profile.first_name).toBe("Phase");
+    }
+
+    const crossUserDecision = await readAuthorizedProfile(
+      owner.client,
+      { pfyUserId: ownerId, authSubjectId: owner.id },
+      { type: "profile", ownerPfyUserId: otherId },
+    );
+    expect(crossUserDecision).toEqual({ status: "unauthorized", reason: "not-owner" });
 
     const crossRead = await owner.client.from("profiles").select("*").eq("user_id", otherId);
     expect(crossRead.error).toBeNull();

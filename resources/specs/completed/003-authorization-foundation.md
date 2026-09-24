@@ -1,6 +1,6 @@
 # SPEC-003 — Authorization Foundation
 
-**Status:** ACTIVE — IMPLEMENTATION READY
+**Status:** COMPLETED — VALIDATED
 **Depends on:** SPEC-002 — Identity & Authentication
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, completed SPEC-002 and applicable accepted ADRs
 
@@ -475,13 +475,17 @@ SPEC-003 may move to `COMPLETED` only when:
 - focused security tests and required validation pass;
 - durable documentation reflects the verified foundation.
 
-## 26. Implementation Readiness
+## 26. Completion Evidence
 
-The bounded authorization foundation is sufficiently defined for activation.
+The bounded authorization foundation was implemented and validated without a database migration.
 
-The activation decision is:
+Validation completed:
 
-**READY TO ACTIVATE**
+- `npm run validate` (formatting, lint, typecheck, unit tests and production build);
+- `npm run supabase:reset`;
+- `npm run test:identity:integration` against local Supabase;
+- focused authorization unit tests and Profile RLS proof-operation coverage.
 
-This decision does not activate SPEC-003, create authorization code or resolve future persona,
-relationship, organization or entitlement semantics. Activation remains a separate governance step.
+The implementation adds no roles, capability tables, relationship semantics, entitlement policy or
+database migration. Future specifications must extend the server-side authorization boundary and
+continue using ordinary authenticated clients for RLS-protected resources.

@@ -96,12 +96,10 @@ Verify:
   - Establishes canonical PFY identity, passwordless Magic Link authentication, SSR sessions,
     verified identity linking and progressive email-first registration.
 
-### Active
-
-- SPEC-003 — Authorization Foundation
-  - active/003-authorization-foundation.md
-  - Reconciled with completed SPEC-002 and current authorization architecture.
-  - State: ACTIVE — IMPLEMENTATION READY.
+- **SPEC-003 — Authorization Foundation**
+  - `completed/003-authorization-foundation.md`
+  - Establishes the verified canonical-user authorization context, explicit deny-by-default
+    decisions, own-Profile enforcement and service-role isolation convention.
 
 ### Planned roadmap
 
@@ -121,7 +119,7 @@ The dependency-oriented planned roadmap after the completed foundation and ident
 11. **SPEC-014 — Legacy Learning Content Migration**
 12. **SPEC-015 — Optional Historical Learning Data Migration**
 
-SPEC-001 and SPEC-002 are completed. SPEC-003 is the current active implementation unit.
+SPEC-001, SPEC-002 and SPEC-003 are completed. No SPEC is currently active.
 
 Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
 
@@ -141,7 +139,7 @@ Several planned learning-domain SPECs were drafted before the composed Activity 
 | SPEC-014 | Stale H5P-to-Activity mapping corrected to H5P-to-Exercise; full reconciliation still required; Activity-composition and Syllabus/Percurso migration remain `DECISION REQUIRED`. |
 
 SPEC-002 was fully reconciled, implemented, independently reviewed, validated and closed.
-SPEC-003 has completed activation-level reconciliation and is the current active implementation unit.
+SPEC-003 was implemented, validated and closed with no schema or migration changes.
 
 The remaining planned SPECs (009–013, 015) have not yet received equivalent activation-level reconciliation.
 

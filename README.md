@@ -6,7 +6,8 @@ PFY is a digital platform for teaching and learning Portuguese as a Foreign Lang
 
 ## Project status
 
-**Current lifecycle state:** architecture approved; product/architecture documentation reconciled; SPEC-001 and SPEC-002 completed and validated.
+**Current lifecycle state:** architecture approved; product/architecture documentation reconciled;
+SPEC-001, SPEC-002 and SPEC-003 completed and validated.
 
 The production codebase is being built from scratch.
 
@@ -119,6 +120,11 @@ SPEC-002 establishes the application-owned identity, passwordless Magic Link aut
 server-side session/current-user resolution and progressive email-first registration flow. Identity
 creation does not imply authorization, entitlement, organization, licensing or learning-domain
 behavior.
+
+SPEC-003 establishes the server-side authorization context and deny-by-default decision boundary.
+It authorizes only the current own-Profile proof operation, preserves Profile RLS and keeps
+service-role access isolated to privileged identity adapters. It does not introduce roles,
+relationships, entitlements or authorization schema.
 
 Learning content, H5P production integration, Attempts, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations remain future bounded specifications. No later specification is active until explicitly promoted.
 

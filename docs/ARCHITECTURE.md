@@ -42,8 +42,9 @@ The current application implements the identity and authentication foundation th
 - PKCE callback and SSR session-cookie handling;
 - server-side resolution of the authenticated request to one canonical PFY User.
 
-Authentication establishes identity only. Authorization and entitlement remain separate future
-concerns.
+Authentication establishes identity only. Authorization is a separate server-side relational
+decision layer, with PostgreSQL RLS as defense in depth; entitlement remains a separate future
+domain concern.
 
 ### Authorization
 
