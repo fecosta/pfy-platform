@@ -262,6 +262,7 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
   });
 
   it("keeps Percurso catalog discovery separate from Activity consumption", async () => {
+    const hiddenId = await createActivity("draft", "free");
     const freeId = await createActivity("published", "free");
     const lockedId = await createActivity("published", "entitlement_required");
     const syllabus = await admin
@@ -276,14 +277,20 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
     const memberships = await admin.from("syllabus_activities").insert([
       {
         syllabus_id: syllabus.data.id,
-        activity_id: freeId,
+        activity_id: hiddenId,
         position: 1,
         pedagogical_metadata: { private: "omit" },
       },
       {
         syllabus_id: syllabus.data.id,
-        activity_id: lockedId,
+        activity_id: freeId,
         position: 2,
+        pedagogical_metadata: { private: "omit" },
+      },
+      {
+        syllabus_id: syllabus.data.id,
+        activity_id: lockedId,
+        position: 4,
         pedagogical_metadata: { private: "omit" },
       },
     ]);
@@ -299,6 +306,7 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
       [freeId, "free"],
       [lockedId, "entitlement_required"],
     ]);
+    expect(catalog.data?.map((row) => row.position)).toEqual([2, 4]);
     expect(catalog.data?.[0]).not.toHaveProperty("pedagogical_metadata");
 
     const anonymousContent = await anonymous
@@ -310,6 +318,7 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
 
   it("keeps published Percursos discoverable with zero visible Activities", async () => {
     const hiddenActivityId = await createActivity("draft", "free");
+    const archivedActivityId = await createActivity("archived", "free");
     const emptySyllabus = await admin
       .from("syllabi")
       .insert({ title: `Empty Percurso ${Date.now()}`, lifecycle: "published" })
@@ -320,6 +329,11 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
       .insert({ title: `Hidden Percurso ${Date.now()}`, lifecycle: "published" })
       .select("id")
       .single();
+    const archivedSyllabus = await admin
+      .from("syllabi")
+      .insert({ title: `Archived content Percurso ${Date.now()}`, lifecycle: "published" })
+      .select("id")
+      .single();
     const draftSyllabus = await admin
       .from("syllabi")
       .insert({ title: `Draft Percurso ${Date.now()}`, lifecycle: "draft" })
@@ -327,16 +341,39 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
       .single();
     expect(emptySyllabus.error).toBeNull();
     expect(hiddenSyllabus.error).toBeNull();
+    expect(archivedSyllabus.error).toBeNull();
     expect(draftSyllabus.error).toBeNull();
-    if (!emptySyllabus.data || !hiddenSyllabus.data || !draftSyllabus.data)
+    if (
+      !emptySyllabus.data ||
+      !hiddenSyllabus.data ||
+      !archivedSyllabus.data ||
+      !draftSyllabus.data
+    )
       throw new Error("Percurso fixtures were not created");
-    syllabusIds.push(emptySyllabus.data.id, hiddenSyllabus.data.id, draftSyllabus.data.id);
+    syllabusIds.push(
+      emptySyllabus.data.id,
+      hiddenSyllabus.data.id,
+      archivedSyllabus.data.id,
+      draftSyllabus.data.id,
+    );
 
     const membership = await admin.from("syllabus_activities").insert([
       {
         syllabus_id: hiddenSyllabus.data.id,
         activity_id: hiddenActivityId,
         position: 1,
+        pedagogical_metadata: { private: "omit" },
+      },
+      {
+        syllabus_id: hiddenSyllabus.data.id,
+        activity_id: archivedActivityId,
+        position: 3,
+        pedagogical_metadata: { private: "omit" },
+      },
+      {
+        syllabus_id: archivedSyllabus.data.id,
+        activity_id: archivedActivityId,
+        position: 7,
         pedagogical_metadata: { private: "omit" },
       },
       {
@@ -351,15 +388,21 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
     const visibleCatalog = await anonymous
       .from("published_syllabus_catalog")
       .select("syllabus_id,activity_id,position")
-      .in("syllabus_id", [emptySyllabus.data.id, hiddenSyllabus.data.id, draftSyllabus.data.id])
+      .in("syllabus_id", [
+        emptySyllabus.data.id,
+        hiddenSyllabus.data.id,
+        archivedSyllabus.data.id,
+        draftSyllabus.data.id,
+      ])
       .order("syllabus_id")
       .order("position");
     expect(visibleCatalog.error).toBeNull();
-    expect(visibleCatalog.data).toHaveLength(2);
+    expect(visibleCatalog.data).toHaveLength(3);
     expect(visibleCatalog.data).toEqual(
       expect.arrayContaining([
         { syllabus_id: emptySyllabus.data.id, activity_id: null, position: null },
-        { syllabus_id: hiddenSyllabus.data.id, activity_id: null, position: 1 },
+        { syllabus_id: hiddenSyllabus.data.id, activity_id: null, position: null },
+        { syllabus_id: archivedSyllabus.data.id, activity_id: null, position: null },
       ]),
     );
   });

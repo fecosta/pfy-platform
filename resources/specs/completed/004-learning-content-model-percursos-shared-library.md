@@ -790,7 +790,7 @@ At that point:
 ## 20. Closure Evidence
 
 - Implemented the canonical Activity, ordered typed ActivityBlock, Exercise, Syllabus/Percurso and reusable membership schema in `supabase/migrations/20260924000000_learning_content_foundation.sql`.
-- Reconciled access boundaries in `supabase/migrations/20260925000000_learning_content_access_boundary.sql` and `supabase/migrations/20260926000000_learning_content_consumption_projection.sql` with explicit `free`/`entitlement_required` policy, safe catalog/block projections and fail-closed RLS.
+- Reconciled access boundaries in `supabase/migrations/20260925000000_learning_content_access_boundary.sql`, `supabase/migrations/20260926000000_learning_content_consumption_projection.sql` and `supabase/migrations/20260927000000_hide_non_public_percurso_memberships.sql` with explicit `free`/`entitlement_required` policy, safe catalog/block projections, hidden-membership filtering and fail-closed RLS.
 - Verified safe catalog views, free-content RLS, anonymous content denial and entitlement-required fail-closed behavior with live integration tests in `tests/content.integration.test.ts`.
 - Implemented shared published Activity and Percurso read flows at `/explorar`, `/atividades/[id]`, `/percursos` and `/percursos/[id]`; anonymous Activity opening redirects to the existing `/login` flow.
 - Verified malformed block rejection, canonical Exercise references and non-sequential pedagogical labels in `tests/content.test.ts`.
