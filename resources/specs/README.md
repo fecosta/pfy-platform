@@ -105,7 +105,7 @@ Verify:
 
 - **SPEC-004 — Learning Content Model, Percursos & Shared Library**
   - `completed/004-learning-content-model-percursos-shared-library.md`
-  - Establishes canonical Activity, Exercise, Percurso and shared-library foundations.
+  - Establishes canonical Activity, Exercise, Percurso, safe catalog discovery and authenticated free-content access foundations.
   - State: COMPLETED — COHERENCE VERIFIED.
 
 ### Planned roadmap

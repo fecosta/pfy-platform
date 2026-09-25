@@ -12,6 +12,11 @@ Implement provider-agnostic access semantics shared by B2C, B2B and PFY Impact.
 
 PFY separates commercial origin from access: License -> LicenseCapacity -> SeatAllocation -> Entitlement -> User.
 
+SPEC-004 already distinguishes publication, safe catalog discovery and Activity content access. It
+classifies Activities as `free` or `entitlement_required`; SPEC-009 owns the future entitlement
+evaluation required for the latter and must not treat publication or authentication alone as an
+entitlement.
+
 ## 3. Problem / Gap
 
 PFY needs durable access semantics before billing or institutional distribution can control learning access.

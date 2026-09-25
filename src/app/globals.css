@@ -114,6 +114,13 @@ body {
 .activity-header {
   margin-bottom: 2rem;
 }
+.locked-content {
+  max-width: 680px;
+  padding: 2rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-background-surface);
+}
 .composition {
   display: grid;
   gap: 1.25rem;

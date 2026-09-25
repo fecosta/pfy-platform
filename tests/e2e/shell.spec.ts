@@ -11,10 +11,14 @@ test("shared content navigation renders", async ({ page }) => {
   await page.getByRole("link", { name: "Explorar", exact: true }).click();
   await expect(page).toHaveURL(/\/explorar$/);
   await expect(page.getByRole("heading", { name: "Explorar" })).toBeVisible();
-  await expect(page.getByText(/nenhuma atividade publicada ainda/i)).toBeVisible();
+  await expect(
+    page.getByText(/nenhuma atividade publicada ainda/i).or(page.locator(".content-card").first()),
+  ).toBeVisible();
 
   await page.getByRole("link", { name: "Percursos" }).click();
   await expect(page).toHaveURL(/\/percursos$/);
   await expect(page.getByRole("heading", { name: "Percursos" })).toBeVisible();
-  await expect(page.getByText(/nenhum percurso publicado ainda/i)).toBeVisible();
+  await expect(
+    page.getByText(/nenhum percurso publicado ainda/i).or(page.locator(".content-card").first()),
+  ).toBeVisible();
 });

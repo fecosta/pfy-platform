@@ -60,6 +60,7 @@ domain concern.
 - Syllabus is the canonical structured pedagogical sequence.
 - Percurso is the user-facing representation of Syllabus.
 - Library/Explorar is a discovery surface, not a content entity.
+- Publication lifecycle, safe catalog discovery and content consumption access are separate boundaries.
 
 ### H5P
 
@@ -180,7 +181,7 @@ The verified SPEC-004 implementation uses:
 - `syllabi` for canonical Syllabus/Percurso metadata and lifecycle;
 - `syllabus_activities` for position-unique, reusable Activity references and Percurso-specific pedagogical metadata.
 
-RLS and column grants expose only published Activities, Exercises and blocks, plus published Syllabi and memberships whose referenced Activity is also published, to ordinary `anon`/`authenticated` reads. No SPEC-004 content-management capability exists in the SPEC-003 authorization foundation, so non-published content has no ordinary read path and remains deny-by-default. Exercise implementation metadata is not granted to ordinary readers.
+The verified access boundary uses `published_activity_catalog` and `published_syllabus_catalog` views for safe discovery. These views expose only allowlisted catalog fields and never arbitrary discovery or pedagogical JSONB. Anonymous visitors can discover published Activities/Percursos, but cannot read Activity, ActivityBlock or Exercise tables. Published free content is readable only by a canonical authenticated PFY user. Published `entitlement_required` content remains denied until SPEC-009 supplies the applicable entitlement policy. No SPEC-004 content-management capability exists in the SPEC-003 authorization foundation, so non-published content remains deny-by-default. Exercise implementation metadata is not granted to ordinary readers.
 
 ## 7. Exercise identity
 

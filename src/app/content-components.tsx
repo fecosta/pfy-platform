@@ -17,6 +17,11 @@ export function ActivityCard({ activity }: { activity: ActivitySummary }) {
       <p className="card-kicker">Atividade{activity.level ? ` · ${activity.level}` : ""}</p>
       <h2>{activity.title}</h2>
       <p>{activity.summary || "Uma atividade composta para aprender no seu ritmo."}</p>
+      <p className="metadata">
+        {activity.accessPolicy === "free"
+          ? "Disponível com uma conta PFY"
+          : "Requer autorização de acesso"}
+      </p>
       <Link className="text-link" href={`/atividades/${activity.id}` as Route}>
         Abrir atividade <span aria-hidden="true">-&gt;</span>
       </Link>

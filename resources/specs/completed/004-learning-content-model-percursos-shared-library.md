@@ -181,6 +181,16 @@ Role/context differences may affect actions and supplementary information, but m
 
 It is not a content entity.
 
+### Access boundary reconciliation
+
+Publication lifecycle, catalog discovery and content consumption are separate concerns. The
+published catalog is available through an allowlisted safe projection to anonymous visitors, but
+opening/consuming an Activity requires an authenticated canonical PFY identity. Activities carry an
+explicit `free` or `entitlement_required` access classification. Authenticated users may consume
+published `free` Activities without paid entitlement. `entitlement_required` Activities remain
+fail-closed until the future SPEC-009 entitlement policy exists. Published status alone never grants
+anonymous or authenticated content access.
+
 ## 5. Scope
 
 ### 5.1 In Scope — Activity
@@ -440,7 +450,10 @@ Membership does not own a copy of Activity content.
 
 ### Lifecycle visibility
 
-Only published content is available through ordinary Student/Teacher discovery surfaces.
+Only published content is available through ordinary catalog discovery surfaces. Discovery uses
+safe allowlisted catalog views and does not expose arbitrary JSONB. Complete Activity content,
+ActivityBlocks and Exercises require authenticated free-content access; draft/archived content and
+published entitlement-required content require explicit future authorization.
 
 Draft/archived access requires explicit authorization.
 
@@ -459,6 +472,9 @@ Content operations must follow deny-by-default conventions.
 At minimum:
 
 - ordinary Student/Teacher browsing reads published content only;
+- anonymous browsing may read only the safe published catalog projection;
+- opening/consuming an Activity requires a canonical authenticated PFY identity;
+- only explicitly `free` Activities are readable before SPEC-009; `entitlement_required` content fails closed;
 - draft/archived access requires an explicit authorized content capability;
 - client-supplied lifecycle state must not bypass server authorization;
 - publication state must be enforced server-side;
@@ -768,8 +784,9 @@ At that point:
 ## 20. Closure Evidence
 
 - Implemented the canonical Activity, ordered typed ActivityBlock, Exercise, Syllabus/Percurso and reusable membership schema in `supabase/migrations/20260924000000_learning_content_foundation.sql`.
-- Verified published-only RLS and column grants with positive/negative live integration tests in `tests/content.integration.test.ts`.
-- Implemented shared published Activity and Percurso read flows at `/explorar`, `/atividades/[id]`, `/percursos` and `/percursos/[id]`.
+- Reconciled access boundaries in `supabase/migrations/20260925000000_learning_content_access_boundary.sql` with explicit `free`/`entitlement_required` policy, safe catalog projections and fail-closed RLS.
+- Verified safe catalog views, free-content RLS, anonymous content denial and entitlement-required fail-closed behavior with live integration tests in `tests/content.integration.test.ts`.
+- Implemented shared published Activity and Percurso read flows at `/explorar`, `/atividades/[id]`, `/percursos` and `/percursos/[id]`; anonymous Activity opening redirects to the existing `/login` flow.
 - Verified malformed block rejection, canonical Exercise references and non-sequential pedagogical labels in `tests/content.test.ts`.
-- No H5P/Lumi mapping, Attempts, Results, progress, performance, favorites, assignments, licensing or future role semantics were introduced.
-- Validation evidence: `npm run validate`, `npm run supabase:reset`, live identity/content integration tests, and `npx playwright test tests/e2e/shell.spec.ts` passed with the local Supabase configuration active at validation time.
+- No H5P/Lumi mapping, Attempts, Results, progress, performance, favorites, assignments, licensing, entitlement tables/evaluator or future role semantics were introduced.
+- Validation evidence: `npm run validate`, `npm run supabase:reset`, live identity/content integration tests, full browser tests, and `npm run test:auth:e2e` passed with the local Supabase configuration active at validation time.

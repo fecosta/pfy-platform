@@ -33,6 +33,11 @@ export default async function PercursoPage({ params }: { params: Promise<{ id: s
                 <Link href={`/atividades/${activity.id}` as Route}>{activity.title}</Link>
               </h2>
               <p>{activity.summary}</p>
+              <p className="metadata">
+                {activity.accessPolicy === "free"
+                  ? "Disponível com uma conta PFY"
+                  : "Requer autorização de acesso"}
+              </p>
               {typeof pedagogicalMetadata.purpose === "string" ? (
                 <p className="metadata">Propósito: {pedagogicalMetadata.purpose}</p>
               ) : null}

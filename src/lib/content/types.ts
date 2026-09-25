@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const activityLifecycleSchema = z.enum(["draft", "published", "archived"]);
 export type ActivityLifecycle = z.infer<typeof activityLifecycleSchema>;
+export const activityAccessPolicySchema = z.enum(["free", "entitlement_required"]);
+export type ActivityAccessPolicy = z.infer<typeof activityAccessPolicySchema>;
 
 const objectSchema = z.record(z.string(), z.unknown());
 const safeHttpUrlSchema = z
@@ -39,6 +41,7 @@ export type ActivitySummary = {
   summary: string;
   coverAssetUrl: string | null;
   level: string | null;
+  accessPolicy: ActivityAccessPolicy;
 };
 
 export type Activity = ActivitySummary & {

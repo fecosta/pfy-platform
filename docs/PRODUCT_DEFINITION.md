@@ -349,6 +349,21 @@ Teachers and Students share the same canonical catalog.
 
 PFY must not duplicate Activity records or catalogs by audience.
 
+Publication, discovery and consumption are separate concerns. PFY may expose a safe projection of
+the published catalog to unauthenticated visitors, but opening and consuming learning content
+requires an authenticated PFY identity. A published Activity is not automatically free or
+consumable anonymously.
+
+An Activity explicitly carries one of two access classifications:
+
+- `free` — an authenticated PFY user may consume the published Activity without a paid entitlement;
+- `entitlement_required` — the applicable future entitlement policy must authorize consumption.
+
+The absence of a future entitlement implementation must fail closed for `entitlement_required`
+content. Access classification must not be inferred from publication state, authentication alone,
+Activity level, Percurso membership or metadata heuristics. The licensing/allocation/entitlement
+model belongs to SPEC-009.
+
 ## 7. Core learner information architecture
 
 The approved Student information architecture is:

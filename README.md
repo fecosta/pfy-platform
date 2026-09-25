@@ -126,7 +126,7 @@ It authorizes only the current own-Profile proof operation, preserves Profile RL
 service-role access isolated to privileged identity adapters. It does not introduce roles,
 relationships, entitlements or authorization schema.
 
-H5P production integration, Attempts, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations remain future bounded specifications. SPEC-004 establishes the canonical Activity, Exercise, Percurso and shared published-library content foundation. No later specification is active until explicitly promoted.
+H5P production integration, Attempts, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations remain future bounded specifications. SPEC-004 establishes the canonical Activity, Exercise, Percurso, shared published-library content foundation and separates safe catalog discovery from authenticated content access. No later specification is active until explicitly promoted.
 
 ## Application development
 
