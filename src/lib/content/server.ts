@@ -74,7 +74,7 @@ export async function getPublishedActivity(id: string): Promise<PublishedActivit
     const [activityResult, blocksResult] = await Promise.all([
       supabase.from("activities").select(activityColumns).eq("id", parsedId.data).maybeSingle(),
       supabase
-        .from("activity_blocks")
+        .from("free_activity_block_consumption")
         .select("id,position,block_type,content,exercise_id")
         .eq("activity_id", parsedId.data)
         .order("position"),
@@ -147,13 +147,14 @@ export async function getPublishedSyllabus(id: string): Promise<Syllabus | null>
     if (error || !data || data.length === 0) return null;
 
     const first = data[0];
+    const visibleActivities = data.filter((row) => row.activity_id !== null);
     return {
       id: first.syllabus_id,
       title: first.syllabus_title,
       description: first.syllabus_description,
       level: first.syllabus_level,
       expectedWorkload: first.expected_workload,
-      activities: data.map((row) => ({
+      activities: visibleActivities.map((row) => ({
         position: row.position,
         activity: {
           id: row.activity_id,

@@ -185,7 +185,9 @@ It is not a content entity.
 
 Publication lifecycle, catalog discovery and content consumption are separate concerns. The
 published catalog is available through an allowlisted safe projection to anonymous visitors, but
-opening/consuming an Activity requires an authenticated canonical PFY identity. Activities carry an
+opening/consuming an Activity requires an authenticated canonical PFY identity. Authenticated free
+consumption uses the allowlisted `free_activity_block_consumption` projection rather than raw
+ActivityBlock JSONB. Activities carry an
 explicit `free` or `entitlement_required` access classification. Authenticated users may consume
 published `free` Activities without paid entitlement. `entitlement_required` Activities remain
 fail-closed until the future SPEC-009 entitlement policy exists. Published status alone never grants
@@ -554,6 +556,7 @@ Downstream SPECs must not redefine Activity, Exercise or Percurso identity.
 - [ ] At least the approved MVP block semantics can be represented without a rigid pedagogical sequence.
 - [ ] Passive/editorial/media blocks are distinguishable from Exercises.
 - [ ] Invalid or unsupported block state fails safely.
+- [ ] Ordinary Activity consumption receives only the approved block-consumption shape, never raw arbitrary block JSONB.
 - [ ] `Bora entender?` or similar pedagogical labels are not hardcoded as mandatory workflow stages.
 
 ### Exercise
@@ -569,6 +572,7 @@ Downstream SPECs must not redefine Activity, Exercise or Percurso identity.
 
 - [ ] Syllabus/Percurso has canonical PFY identity.
 - [ ] Published Percursos can expose ordered Activity membership.
+- [ ] Published Percursos remain discoverable when they have zero publicly visible Activities.
 - [ ] Activity ordering inside a Percurso is deterministic.
 - [ ] The same Activity can belong to multiple Percursos.
 - [ ] Percurso membership does not duplicate Activity content.
@@ -595,6 +599,8 @@ Downstream SPECs must not redefine Activity, Exercise or Percurso identity.
 ### Security
 
 - [ ] Positive and negative tests cover published versus non-published content visibility.
+- [ ] Authenticated free-content reads use an allowlisted ActivityBlock consumption projection rather than raw block storage.
+- [ ] Public catalog projections do not expose arbitrary discovery or pedagogical JSON fields.
 - [ ] Unauthorized lifecycle/content-management access is denied.
 - [ ] Server-side authorization is not replaced by client-visible state.
 - [ ] Relevant RLS behavior follows SPEC-003 conventions.
@@ -784,7 +790,7 @@ At that point:
 ## 20. Closure Evidence
 
 - Implemented the canonical Activity, ordered typed ActivityBlock, Exercise, Syllabus/Percurso and reusable membership schema in `supabase/migrations/20260924000000_learning_content_foundation.sql`.
-- Reconciled access boundaries in `supabase/migrations/20260925000000_learning_content_access_boundary.sql` with explicit `free`/`entitlement_required` policy, safe catalog projections and fail-closed RLS.
+- Reconciled access boundaries in `supabase/migrations/20260925000000_learning_content_access_boundary.sql` and `supabase/migrations/20260926000000_learning_content_consumption_projection.sql` with explicit `free`/`entitlement_required` policy, safe catalog/block projections and fail-closed RLS.
 - Verified safe catalog views, free-content RLS, anonymous content denial and entitlement-required fail-closed behavior with live integration tests in `tests/content.integration.test.ts`.
 - Implemented shared published Activity and Percurso read flows at `/explorar`, `/atividades/[id]`, `/percursos` and `/percursos/[id]`; anonymous Activity opening redirects to the existing `/login` flow.
 - Verified malformed block rejection, canonical Exercise references and non-sequential pedagogical labels in `tests/content.test.ts`.

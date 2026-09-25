@@ -35,7 +35,7 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
     return result.data.id;
   }
 
-  async function addExerciseBlock(activityId: string) {
+  async function addExerciseBlock(activityId: string, position = 1) {
     const exercise = await admin
       .from("exercises")
       .insert({
@@ -50,7 +50,7 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
 
     const block = await admin.from("activity_blocks").insert({
       activity_id: activityId,
-      position: 1,
+      position,
       block_type: "exercise",
       content: {},
       exercise_id: exercise.data.id,
@@ -141,11 +141,56 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
     expect(activityRead.error).toBeTruthy();
     expect(blockRead.error).toBeTruthy();
     expect(exerciseRead.error).toBeTruthy();
+    const projectionRead = await anonymous
+      .from("free_activity_block_consumption")
+      .select("*")
+      .eq("activity_id", activityId);
+    expect(projectionRead.error).toBeTruthy();
   });
 
   it("allows an authenticated canonical user to consume explicitly free content", async () => {
     const activityId = await createActivity("published", "free");
-    const exerciseId = await addExerciseBlock(activityId);
+    const passiveBlocks = await admin.from("activity_blocks").insert([
+      {
+        activity_id: activityId,
+        position: 1,
+        block_type: "editorial",
+        content: { text: "Visible text", private_editorial_note: "must not reach consumer" },
+      },
+      { activity_id: activityId, position: 2, block_type: "heading", content: { text: "Heading" } },
+      {
+        activity_id: activityId,
+        position: 3,
+        block_type: "reflection",
+        content: { prompt: "Prompt" },
+      },
+      {
+        activity_id: activityId,
+        position: 4,
+        block_type: "image",
+        content: { src: "https://example.com/image.png", alt: "Image", private: "omit" },
+      },
+      {
+        activity_id: activityId,
+        position: 5,
+        block_type: "video",
+        content: { src: "https://example.com/video.mp4", title: "Video", private: "omit" },
+      },
+      {
+        activity_id: activityId,
+        position: 6,
+        block_type: "infographic",
+        content: { src: "https://example.com/info.png", alt: "Infographic", private: "omit" },
+      },
+      {
+        activity_id: activityId,
+        position: 7,
+        block_type: "embed",
+        content: { url: "https://example.com/embed", title: "Embed", private: "omit" },
+      },
+    ]);
+    expect(passiveBlocks.error).toBeNull();
+    const exerciseId = await addExerciseBlock(activityId, 8);
     const authenticated = await createAuthenticatedFixture(`free-${Date.now()}@example.com`);
 
     const activityRead = await authenticated
@@ -153,8 +198,12 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
       .select("id,title")
       .eq("id", activityId);
     const blockRead = await authenticated
+      .from("free_activity_block_consumption")
+      .select("position,block_type,content,exercise_id")
+      .eq("activity_id", activityId);
+    const rawBlockRead = await authenticated
       .from("activity_blocks")
-      .select("content,exercise_id")
+      .select("*")
       .eq("activity_id", activityId);
     const exerciseRead = await authenticated
       .from("exercises")
@@ -163,7 +212,20 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
     expect(activityRead.error).toBeNull();
     expect(activityRead.data).toHaveLength(1);
     expect(blockRead.error).toBeNull();
-    expect(blockRead.data).toHaveLength(1);
+    expect(blockRead.data).toHaveLength(8);
+    expect(rawBlockRead.error).toBeTruthy();
+    expect(blockRead.data?.map((block) => block.block_type)).toEqual([
+      "editorial",
+      "heading",
+      "reflection",
+      "image",
+      "video",
+      "infographic",
+      "embed",
+      "exercise",
+    ]);
+    expect(blockRead.data?.[0].content).toEqual({ text: "Visible text" });
+    expect(blockRead.data?.[0].content).not.toHaveProperty("private_editorial_note");
     expect(exerciseRead.error).toBeNull();
     expect(exerciseRead.data).toEqual([
       { id: exerciseId, activity_id: activityId, title: "Exercise" },
@@ -196,8 +258,7 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
     expect(catalog.data).toEqual([{ id: activityId, access_policy: "entitlement_required" }]);
     expect(activityRead.error).toBeNull();
     expect(activityRead.data).toEqual([]);
-    expect(blockRead.error).toBeNull();
-    expect(blockRead.data).toEqual([]);
+    expect(blockRead.error).toBeTruthy();
   });
 
   it("keeps Percurso catalog discovery separate from Activity consumption", async () => {
@@ -245,6 +306,62 @@ describe.skipIf(!integrationEnabled)("SPEC-004 content access against local Supa
       .select("*")
       .eq("activity_id", freeId);
     expect(anonymousContent.error).toBeTruthy();
+  });
+
+  it("keeps published Percursos discoverable with zero visible Activities", async () => {
+    const hiddenActivityId = await createActivity("draft", "free");
+    const emptySyllabus = await admin
+      .from("syllabi")
+      .insert({ title: `Empty Percurso ${Date.now()}`, lifecycle: "published" })
+      .select("id")
+      .single();
+    const hiddenSyllabus = await admin
+      .from("syllabi")
+      .insert({ title: `Hidden Percurso ${Date.now()}`, lifecycle: "published" })
+      .select("id")
+      .single();
+    const draftSyllabus = await admin
+      .from("syllabi")
+      .insert({ title: `Draft Percurso ${Date.now()}`, lifecycle: "draft" })
+      .select("id")
+      .single();
+    expect(emptySyllabus.error).toBeNull();
+    expect(hiddenSyllabus.error).toBeNull();
+    expect(draftSyllabus.error).toBeNull();
+    if (!emptySyllabus.data || !hiddenSyllabus.data || !draftSyllabus.data)
+      throw new Error("Percurso fixtures were not created");
+    syllabusIds.push(emptySyllabus.data.id, hiddenSyllabus.data.id, draftSyllabus.data.id);
+
+    const membership = await admin.from("syllabus_activities").insert([
+      {
+        syllabus_id: hiddenSyllabus.data.id,
+        activity_id: hiddenActivityId,
+        position: 1,
+        pedagogical_metadata: { private: "omit" },
+      },
+      {
+        syllabus_id: draftSyllabus.data.id,
+        activity_id: hiddenActivityId,
+        position: 1,
+        pedagogical_metadata: { private: "omit" },
+      },
+    ]);
+    expect(membership.error).toBeNull();
+
+    const visibleCatalog = await anonymous
+      .from("published_syllabus_catalog")
+      .select("syllabus_id,activity_id,position")
+      .in("syllabus_id", [emptySyllabus.data.id, hiddenSyllabus.data.id, draftSyllabus.data.id])
+      .order("syllabus_id")
+      .order("position");
+    expect(visibleCatalog.error).toBeNull();
+    expect(visibleCatalog.data).toHaveLength(2);
+    expect(visibleCatalog.data).toEqual(
+      expect.arrayContaining([
+        { syllabus_id: emptySyllabus.data.id, activity_id: null, position: null },
+        { syllabus_id: hiddenSyllabus.data.id, activity_id: null, position: 1 },
+      ]),
+    );
   });
 
   it("preserves ownership and deterministic ordering constraints", async () => {

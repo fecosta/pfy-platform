@@ -15,6 +15,39 @@ describe("content read model", () => {
     ).toEqual({ id: "block-heading", position: 4, type: "heading", text: "Bora entender?" });
   });
 
+  it("parses every approved passive and interactive block shape", () => {
+    const blocks = [
+      ["editorial", { text: "Text" }],
+      ["heading", { text: "Heading" }],
+      ["reflection", { prompt: "Prompt" }],
+      ["image", { src: "https://example.com/image.png", alt: "Image" }],
+      ["video", { src: "https://example.com/video.mp4", title: "Video" }],
+      ["infographic", { src: "https://example.com/info.png", alt: "Info" }],
+      ["embed", { url: "https://example.com/embed", title: "Embed" }],
+    ] as const;
+
+    for (const [index, [blockType, content]] of blocks.entries()) {
+      expect(
+        parseActivityBlock({
+          id: `block-${blockType}`,
+          position: index + 1,
+          block_type: blockType,
+          content,
+          exercise_id: null,
+        }),
+      ).not.toBeNull();
+    }
+    expect(
+      parseActivityBlock({
+        id: "block-exercise",
+        position: 8,
+        block_type: "exercise",
+        content: { private: "ignored" },
+        exercise_id: "exercise-uuid",
+      }),
+    ).toEqual({ id: "block-exercise", position: 8, type: "exercise", exerciseId: "exercise-uuid" });
+  });
+
   it("drops unsupported or malformed blocks instead of rendering arbitrary JSON", () => {
     expect(
       parseActivityBlock({
