@@ -1,0 +1,15 @@
+{
+  "models": {
+    "economy": "9router/ocg/kimi-k2.7-code",
+    "standard": "9router/ocg/kimi-k2.7-code",
+    "highRisk": "9router/cc/claude-sonnet-5",
+    "review": "9router/cx/gpt-5.6-luna-review",
+    "reviewEscalation": "9router/cx/gpt-5.6-sol-review"
+  },
+  "maxRemediationRounds": 2,
+  "requireIndependentReview": true,
+  "allowAutoCommits": false,
+  "autoApproveOpenCodePermissions": true,
+  "openCodeTimeoutSeconds": 1800,
+  "campaignReportLocation": "resources/campaigns"
+}

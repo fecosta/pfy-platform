@@ -21,3 +21,13 @@ services/h5p-runtime/storage/
 services/h5p-runtime/dist/
 services/h5p-runtime/.env*
 services/h5p-runtime/node_modules/
+
+# Campaign runtime state (tracked: resources/campaigns/README.md)
+resources/campaigns/*/
+
+# Local OpenCode state (tracked: .opencode/campaign project tooling)
+.opencode/node_modules/
+.opencode/package.json
+.opencode/package-lock.json
+.opencode/bun.lock
+.opencode/opencode.json

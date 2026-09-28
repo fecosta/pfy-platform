@@ -18,7 +18,11 @@
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset --local",
-    "validate": "npm run format && npm run lint && npm run typecheck && npm test && npm run build"
+    "validate": "npm run format && npm run lint && npm run typecheck && npm test && npm run build",
+    "campaign": "tsx scripts/spec-campaign.ts",
+    "campaign:dry-run": "npm run campaign -- --dry-run",
+    "campaign:once": "npm run campaign -- --once",
+    "campaign:resume": "npm run campaign -- --resume"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -36,6 +40,7 @@
     "eslint": "9.39.2",
     "eslint-config-next": "16.3.5",
     "prettier": "3.9.8",
+    "tsx": "^4.19.3",
     "typescript": "5.9.3",
     "vitest": "5.0.1"
   }
