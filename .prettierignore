@@ -1,4 +1,8 @@
 .claude/
+.opencode/
 docs/
 resources/
 supabase/
+services/h5p-runtime/storage/
+services/h5p-runtime/dist/
+services/h5p-runtime/node_modules/

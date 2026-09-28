@@ -7,7 +7,7 @@ PFY is a digital platform for teaching and learning Portuguese as a Foreign Lang
 ## Project status
 
 **Current lifecycle state:** architecture approved; product/architecture documentation reconciled;
-SPEC-001, SPEC-002, SPEC-003 and SPEC-004 completed and validated.
+SPEC-001, SPEC-002, SPEC-003, SPEC-004 and SPEC-005 completed and validated.
 
 The production codebase is being built from scratch.
 
@@ -126,7 +126,7 @@ It authorizes only the current own-Profile proof operation, preserves Profile RL
 service-role access isolated to privileged identity adapters. It does not introduce roles,
 relationships, entitlements or authorization schema.
 
-H5P production integration, Attempts, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations remain future bounded specifications. SPEC-004 establishes the canonical Activity, Exercise, Percurso, shared published-library content foundation and separates safe catalog discovery from authenticated content access. No later specification is active until explicitly promoted.
+SPEC-005 integrates the isolated Lumi H5P runtime as an implementation of PFY Exercises behind the PFY H5P Adapter. Exercise Attempts, Activity Progress/Performance, authoring, teacher-student relationships, licensing, organizations, reporting, billing and migrations remain future bounded specifications. SPEC-004 and SPEC-005 establish the canonical Activity/Exercise/Percurso model and H5P playback boundary. No later specification is active until explicitly promoted.
 
 ## Application development
 

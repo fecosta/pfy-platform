@@ -10,6 +10,7 @@ import type {
   ActivitySummary,
   SyllabusSummary,
 } from "@/lib/content/types";
+import { H5pExerciseBlock } from "./h5p-exercise-block";
 
 export function ActivityCard({ activity }: { activity: ActivitySummary }) {
   return (
@@ -46,7 +47,7 @@ export function ActivityComposition({ activity }: { activity: Activity }) {
   return (
     <div className="composition">
       {activity.blocks.map((block) => (
-        <ActivityBlockView key={block.id} block={block} />
+        <ActivityBlockView key={block.id} activityId={activity.id} block={block} />
       ))}
       {activity.blocks.length === 0 ? (
         <p className="empty-state">Esta atividade ainda não tem conteúdo publicado.</p>
@@ -55,7 +56,7 @@ export function ActivityComposition({ activity }: { activity: Activity }) {
   );
 }
 
-function ActivityBlockView({ block }: { block: ActivityBlock }) {
+function ActivityBlockView({ activityId, block }: { activityId: string; block: ActivityBlock }) {
   switch (block.type) {
     case "heading":
       return <h2 className="composition-heading">{block.text}</h2>;
@@ -95,11 +96,6 @@ function ActivityBlockView({ block }: { block: ActivityBlock }) {
         </div>
       );
     case "exercise":
-      return (
-        <section className="exercise-placeholder">
-          <p className="card-kicker">Exercício</p>
-          <p>Este exercício interativo será disponibilizado em uma etapa futura.</p>
-        </section>
-      );
+      return <H5pExerciseBlock activityId={activityId} exerciseId={block.exerciseId} />;
   }
 }

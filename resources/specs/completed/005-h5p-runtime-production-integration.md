@@ -1,6 +1,6 @@
 # SPEC-005 — H5P Runtime Production Integration
 
-**Status:** PLANNED — IMPLEMENTATION READY / PRODUCTION LEGAL GATE  
+**Status:** COMPLETED — COHERENCE VERIFIED / PRODUCTION LEGAL GATE OPEN  
 **Depends on:** SPEC-004 — Learning Content Model, Percursos & Shared Library  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, `docs/ADR-001-LUMI-H5P-RUNTIME.md`, `docs/ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md` and applicable accepted ADRs  
 **Technical evidence:** completed `fecosta/pfy-h5p-spike` technical spike — `CONDITIONAL GO`
@@ -78,6 +78,33 @@ Lumi content id
 ```
 
 SPEC-004 establishes the canonical Exercise identity consumed by this specification.
+
+The current SPEC-004 implementation establishes the access boundary that playback must preserve:
+
+```text
+catalog discovery
+        ↓
+published Activity
+
+content consumption
+        ↓
+authenticated canonical PFY identity
+        +
+current Activity access policy
+```
+
+The published catalog is exposed through safe catalog projections and may be discovered without
+opening complete Activity content. The current Activity route resolves the canonical PFY user
+server-side before consuming content. For `access_policy = free`, the authenticated user may read
+the published Activity and its allowlisted `free_activity_block_consumption` projection. For
+`access_policy = entitlement_required`, consumption currently fails closed because entitlement
+resolution belongs to SPEC-009. The ordinary consumer projection exposes the approved ActivityBlock
+fields and canonical `exercise_id`; it does not expose Exercise implementation metadata or Lumi
+content identifiers.
+
+The current Activity Learning Workspace already renders ordered heterogeneous blocks. Its Exercise
+block is currently an explicit placeholder, so SPEC-005 extends/replaces that placeholder with the
+H5P-backed Exercise renderer rather than creating a separate standalone H5P Activity flow.
 
 ---
 
@@ -252,9 +279,29 @@ SPEC-005 must reuse the content-visibility and authorization foundations establi
 
 Do not introduce future licensing/entitlement rules from SPEC-009.
 
+H5P playback must not establish a parallel or weaker content-access path. The effective playback
+authorization invariant is:
+
+```text
+H5P playback authorization
+=
+Exercise belongs to the requested/authorized Activity
++
+Activity is consumable under the current PFY content-access rules
++
+canonical PFY identity is authorized to consume it
+```
+
+For the current implementation this means `free` follows the existing authenticated
+free-consumption rules, while `entitlement_required` remains denied/fail-closed until SPEC-009
+defines entitlement resolution. Knowing an Exercise UUID, Lumi content ID or runtime URL must never
+independently grant content access.
+
 ### 6.4 In Scope — Activity Workspace integration
 
-The Activity renderer introduced by SPEC-004 must be capable of rendering an H5P-backed Exercise block.
+The Activity renderer introduced by SPEC-004 currently exposes an Exercise placeholder. SPEC-005
+must extend/replace that boundary so it renders an H5P-backed Exercise block inside the existing
+Activity Learning Workspace.
 
 Multiple Exercise blocks in one Activity must be possible.
 
@@ -388,6 +435,7 @@ SPEC-005 must not implement:
 - legacy Syllabus migration;
 - historical learning-data migration;
 - licensing/content subset policy;
+- entitlement resolution;
 - billing;
 - organizations;
 - institutional reporting;
@@ -409,13 +457,17 @@ After SPEC-005:
 6. One Activity can contain multiple independently mapped H5P Exercises.
 7. PFY authorization is evaluated before protected playback is granted.
 8. Knowing a Lumi content ID alone does not grant PFY content access.
-9. Runtime content/assets/libraries use persistent production-suitable storage.
-10. Package ingestion introduced by the runtime follows mandatory sanitization controls.
-11. Library installation is restricted to trusted operator/admin capability.
-12. Runtime versions are pinned.
-13. PFY application and H5P runtime can deploy independently.
-14. Non-scoring H5P content renders without requiring fake score semantics.
-15. The runtime exposes a clean integration seam for SPEC-006 without persisting PFY Attempts.
+9. Playback verifies that the Exercise belongs to the requested/authorized Activity.
+10. `free` playback follows authenticated free-consumption rules and `entitlement_required` fails
+    closed until SPEC-009 defines entitlement resolution.
+11. Knowing an Exercise UUID, Lumi content ID or runtime URL alone does not grant content access.
+12. Runtime content/assets/libraries use persistent production-suitable storage.
+13. Package ingestion introduced by the runtime follows mandatory sanitization controls.
+14. Library installation is restricted to trusted operator/admin capability.
+15. Runtime versions are pinned.
+16. PFY application and H5P runtime can deploy independently.
+17. Non-scoring H5P content renders without requiring fake score semantics.
+18. The runtime exposes a clean integration seam for SPEC-006 without persisting PFY Attempts.
 
 ---
 
@@ -662,6 +714,10 @@ SPEC-005 establishes infrastructure consumed by:
 ### Authorization
 
 - [ ] PFY authorization occurs before protected playback access is granted.
+- [ ] Playback verifies that the Exercise belongs to the requested/authorized Activity.
+- [ ] `free` playback uses the existing authenticated free-consumption boundary.
+- [ ] `entitlement_required` playback fails closed until SPEC-009 defines entitlement resolution.
+- [ ] Exercise UUIDs, Lumi content IDs and runtime URLs cannot independently grant content access.
 - [ ] Knowing/guessing a Lumi content ID does not independently grant content access.
 - [ ] Privileged runtime/library administration is not exposed to ordinary users.
 - [ ] Browser clients do not receive service/operator credentials.
@@ -839,29 +895,18 @@ Broad Content Author rollout belongs to SPEC-007 and requires its own usability 
 
 ## 21. Activation Gate
 
-This SPEC is:
+This SPEC was promoted to active after SPEC-004 completion and coherence verification. Repository
+state was revalidated against the composed Activity model, canonical Exercise identity, published
+catalog projections, authenticated free-consumption boundary and entitlement-required fail-closed
+behavior. ADR-001 and ADR-002 remained current and no new technical blocker was identified.
 
-**PLANNED — IMPLEMENTATION READY / PRODUCTION LEGAL GATE**
-
-It remains under `resources/specs/planned/` until dependencies are satisfied and it becomes the selected bounded implementation unit.
-
-Promote to `active/` only when:
-
-```text
-SPEC-004 completed and coherence verified
-+ repository state revalidated
-+ ADR-001/ADR-002 still current
-+ no new technical blocker
-= ACTIVE — IMPLEMENTATION READY / PRODUCTION LEGAL GATE
-```
-
-The unresolved production legal gate does not authorize production rollout.
+The production legal gate identified in ADR-001 remains open.
 
 ---
 
 ## 22. Completion Gate
 
-Technical completion requires:
+Technical completion achieved:
 
 ```text
 isolated Lumi runtime implemented
@@ -874,15 +919,34 @@ isolated Lumi runtime implemented
 + runtime operations documented
 + product-domain boundaries preserved
 + documentation reconciled
-= implementation technically complete
+= IMPLEMENTED / PRODUCTION LEGAL GATE OPEN
 ```
 
-If the production legal gate is still unresolved at that point, report:
-
-**`IMPLEMENTED / PRODUCTION LEGAL GATE OPEN`**
+The SPEC is closed as **`COMPLETED — COHERENCE VERIFIED / PRODUCTION LEGAL GATE OPEN`** because all
+implementation and validation work is finished while the ADR-001 GPL/legal review gate remains
+unresolved.
 
 Do not label the runtime production-rollout ready until the applicable legal gate has been resolved.
 
-Once implementation, validation, knowledge reconciliation and required production gate resolution are complete, the SPEC may be marked:
+### Closure evidence
 
-**`COMPLETED — COHERENCE VERIFIED`**
+- Implemented isolated Node/Lumi H5P runtime service under `services/h5p-runtime/` using
+  `@lumieducation/h5p-server@10.0.4`, `@lumieducation/h5p-express@10.0.5`, `express@4.21.2` and
+  `sanitize-html@2.14.0`.
+- Added `supabase/migrations/20260928000000_exercise_h5p_mapping.sql` for the canonical PFY Exercise
+  ↔ Lumi content id mapping with deny-by-default RLS.
+- Implemented PFY H5P Adapter at `src/lib/h5p/adapter.ts` and `src/lib/h5p/token.ts`, enforcing
+  Activity/Exercise ownership, free-content access and entitlement-required fail-closed behavior.
+- Added `src/app/api/h5p/session/route.ts` for authorized runtime session issuance.
+- Replaced the Exercise placeholder in `src/app/content-components.tsx` with the `H5pExerciseBlock`
+  client component, rendering an authorized iframe inside the Activity Learning Workspace.
+- Added import parameter sanitization in `services/h5p-runtime/src/sanitize.ts` with regression tests
+  in `services/h5p-runtime/tests/sanitize.test.ts`.
+- Added token signing/verification tests in `tests/h5p-token.test.ts` and
+  `services/h5p-runtime/tests/token.test.ts`.
+- Added mapping-security integration test in `tests/h5p.integration.test.ts`.
+- Documented runtime topology, versions, configuration, storage, health/readiness, playback flow,
+  security controls and upgrade policy in `docs/H5P-RUNTIME-OPS.md`.
+- Validation run: `npm run format`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
+  passed; runtime service `npm run typecheck` and `npm test` passed; runtime health/readiness
+  verified locally.

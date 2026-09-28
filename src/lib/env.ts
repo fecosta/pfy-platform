@@ -7,6 +7,8 @@ const envSchema = z.object({
 
 const serverEnvSchema = envSchema.extend({
   PFY_SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  PFY_H5P_RUNTIME_SECRET: z.string().min(32),
+  PFY_H5P_RUNTIME_URL: z.string().url(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

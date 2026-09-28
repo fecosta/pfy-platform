@@ -137,6 +137,7 @@ body {
   line-height: 1.75;
 }
 .reflection-block,
+.exercise-frame,
 .exercise-placeholder,
 .embed-block {
   padding: 1.25rem;
@@ -164,6 +165,20 @@ body {
 .embed-block a {
   color: var(--color-text-link);
   font-weight: 700;
+}
+.exercise-frame {
+  width: 100%;
+  min-height: 480px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-background-surface);
+  overflow: hidden;
+}
+.exercise-frame iframe {
+  display: block;
+  width: 100%;
+  min-height: 480px;
+  border: 0;
 }
 .syllabus-list {
   display: grid;
