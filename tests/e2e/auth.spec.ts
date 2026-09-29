@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+
+import { findMagicLink } from "./support/magic-link";
 
 const liveAuthEnabled = Boolean(
   process.env.PFY_SUPABASE_URL &&
@@ -147,48 +149,3 @@ test("new email progressively registers and completes the same Magic Link journe
     if (pfyUserId) await admin.from("users").delete().eq("id", pfyUserId);
   }
 });
-
-async function findMagicLink(
-  request: APIRequestContext,
-  emailCaptureUrl: string,
-  email: string,
-  supabaseUrl: string,
-): Promise<string> {
-  await expect
-    .poll(async () => {
-      const messages = await (
-        await request.get(new URL("/api/v1/messages", emailCaptureUrl).toString())
-      ).json();
-      return messages.messages.some(
-        (candidate: { To: { Address: string }[] }) => candidate.To[0]?.Address === email,
-      );
-    })
-    .toBe(true);
-  const messages = await (
-    await request.get(new URL("/api/v1/messages", emailCaptureUrl).toString())
-  ).json();
-  const message = messages.messages.find(
-    (candidate: { To: { Address: string }[] }) => candidate.To[0]?.Address === email,
-  );
-  expect(message).toBeTruthy();
-  const raw = await (
-    await request.get(new URL(`/api/v1/message/${message.ID}/raw`, emailCaptureUrl).toString())
-  ).text();
-  const decoded = raw
-    .replace(/=\r?\n/g, "")
-    .replace(/=3D/g, "=")
-    .replace(/&amp;/g, "&");
-  const authOrigin = new URL(supabaseUrl).origin;
-  const magicLink = [...decoded.matchAll(/href="([^"]+)"/g)]
-    .map((match) => match[1])
-    .find((href) => {
-      try {
-        const link = new URL(href);
-        return link.origin === authOrigin && link.pathname === "/auth/v1/verify";
-      } catch {
-        return false;
-      }
-    });
-  expect(magicLink).toBeTruthy();
-  return magicLink!;
-}

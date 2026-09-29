@@ -60,4 +60,84 @@ describe("H5P runtime token", () => {
     expect(verifyRuntimeToken("not-a-token", secret)).toBeNull();
     expect(verifyRuntimeToken("a.b", secret)).toBeNull();
   });
+
+  // SPEC-005 remediation regression: every case below is attacker-controlled
+  // input that must fail closed (return null) and must never throw.
+  describe("malformed-token security regression (Finding 2)", () => {
+    const validPayload = Buffer.from(
+      JSON.stringify({
+        sub: "user-1",
+        cid: "lumi-123",
+        eid: "exercise-456",
+        act: "activity-789",
+        exp: Math.floor(Date.now() / 1000) + 300,
+        iat: Math.floor(Date.now() / 1000),
+      }),
+    ).toString("base64url");
+    const validHeader = Buffer.from(JSON.stringify({ alg: "HS256", typ: "PFY-H5P-RT" })).toString(
+      "base64url",
+    );
+
+    const cases: Array<[string, string]> = [
+      ["empty string", ""],
+      ["too-short signature", `${validHeader}.${validPayload}.aaaa`],
+      ["too-long signature", `${validHeader}.${validPayload}.${"a".repeat(500)}`],
+      ["malformed base64url signature", `${validHeader}.${validPayload}.!!!not-base64!!!`],
+      ["missing segments", `${validHeader}.${validPayload}`],
+      ["only dots", ".."],
+      ["malformed base64url header", `!!!.${validPayload}.${"a".repeat(43)}`],
+      [
+        "malformed JSON payload",
+        `${validHeader}.${Buffer.from("not-json{").toString("base64url")}.${"a".repeat(43)}`,
+      ],
+      [
+        "invalid header shape",
+        `${Buffer.from(JSON.stringify(["not", "an", "object"])).toString("base64url")}.${validPayload}.${"a".repeat(43)}`,
+      ],
+      [
+        "wrong algorithm",
+        `${Buffer.from(JSON.stringify({ alg: "none", typ: "PFY-H5P-RT" })).toString("base64url")}.${validPayload}.${"a".repeat(43)}`,
+      ],
+      [
+        "invalid payload type (array)",
+        `${validHeader}.${Buffer.from(JSON.stringify(["nope"])).toString("base64url")}.${"a".repeat(43)}`,
+      ],
+      [
+        "missing required claims",
+        `${validHeader}.${Buffer.from(JSON.stringify({ sub: "x" })).toString("base64url")}.${"a".repeat(43)}`,
+      ],
+    ];
+
+    for (const [name, token] of cases) {
+      it(`does not throw and returns null for: ${name}`, () => {
+        expect(() => verifyRuntimeToken(token, secret)).not.toThrow();
+        expect(verifyRuntimeToken(token, secret)).toBeNull();
+      });
+    }
+
+    it("rejects a tampered payload even with a syntactically valid signature length", () => {
+      const token = signRuntimeToken(
+        {
+          sub: "user-1",
+          cid: "lumi-123",
+          eid: "exercise-456",
+          act: "activity-789",
+          exp: Math.floor(Date.now() / 1000) + 300,
+        },
+        secret,
+      );
+      const [header, , signature] = token.split(".");
+      const tamperedPayload = Buffer.from(
+        JSON.stringify({
+          sub: "user-1",
+          cid: "someone-elses-content",
+          eid: "exercise-456",
+          act: "activity-789",
+          exp: Math.floor(Date.now() / 1000) + 300,
+          iat: Math.floor(Date.now() / 1000),
+        }),
+      ).toString("base64url");
+      expect(verifyRuntimeToken(`${header}.${tamperedPayload}.${signature}`, secret)).toBeNull();
+    });
+  });
 });
