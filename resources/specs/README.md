@@ -119,27 +119,30 @@ Verify:
 
 ### Active
 
-No SPEC is currently active.
+- **SPEC-006 — Exercise Attempts, Activity Progress & Results**
+  - `active/006-exercise-attempts-activity-progress-results.md`
+  - Implements canonical Exercise Attempts, Activity Progress, Activity Performance and manual
+    Evaluation evidence. State: ACTIVE — IMPLEMENTATION READY. Both prior activation blockers
+    (Exercise scoreability / assessment semantics; Activity Performance `adequate`/`attention`
+    aggregation) are resolved and reconciled into `docs/PRODUCT_DEFINITION.md` and
+    `docs/ARCHITECTURE.md`.
 
 ### Planned roadmap
 
-The dependency-oriented planned roadmap after SPEC-005 is:
+The dependency-oriented planned roadmap after SPEC-006 is:
 
-
-
-1. **SPEC-006 — Exercise Attempts, Activity Progress & Results**
-2. **SPEC-007 — Activity Authoring & H5P Content Workflow**
-3. **SPEC-008 — Teacher–Student Relationships & Monitoring**
-4. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
-5. **SPEC-010 — Organizations & Institutional Access**
-6. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
-7. **SPEC-012 — B2C Billing Integration**
-8. **SPEC-013 — Legacy User Migration**
-9. **SPEC-014 — Legacy Learning Content Migration**
-10. **SPEC-015 — Optional Historical Learning Data Migration**
+1. **SPEC-007 — Activity Authoring & H5P Content Workflow**
+2. **SPEC-008 — Teacher–Student Relationships & Monitoring**
+3. **SPEC-009 — Licensing, Capacity, Allocation & Entitlements**
+4. **SPEC-010 — Organizations & Institutional Access**
+5. **SPEC-011 — Institutional Reporting & PFY Impact Privacy Layer**
+6. **SPEC-012 — B2C Billing Integration**
+7. **SPEC-013 — Legacy User Migration**
+8. **SPEC-014 — Legacy Learning Content Migration**
+9. **SPEC-015 — Optional Historical Learning Data Migration**
 
 SPEC-001 through SPEC-005 are completed (SPEC-005's final re-review remediation and evidence are in
-§22b of its SPEC file). SPEC-006 remains the next planned roadmap item and is not active.
+§22b of its SPEC file). SPEC-006 is active; SPEC-007 remains the next planned roadmap item.
 
 Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
 
@@ -153,7 +156,7 @@ Several planned learning-domain SPECs were drafted before the composed Activity 
 |---|---|
 | SPEC-004 | Reconciled with ADR-002 in its planned file; open decisions listed in its §17 (including Exercise scoreability) must be re-checked at activation. |
 | SPEC-005 | Completed after final independent re-review remediation (see §22b); reconciled with ADR-002; production legal gate remains open. |
-| SPEC-006 | Reconciled with ADR-002 in its planned file; activation blocked by `DECISION REQUIRED` items (Activity Performance `adequate`/`attention` aggregation; Exercise scoreability / assessment semantics). |
+| SPEC-006 | Reconciled with ADR-002; both prior `DECISION REQUIRED` items (Activity Performance `adequate`/`attention` aggregation; Exercise scoreability / assessment semantics) are resolved. ACTIVE — IMPLEMENTATION READY (`active/006-exercise-attempts-activity-progress-results.md`). |
 | SPEC-007 | Stale one-Activity-to-one-H5P wording corrected; full reconciliation still required. |
 | SPEC-008 | Learning-history wording aligned with canonical evidence layers; full reconciliation still required. |
 | SPEC-014 | Stale H5P-to-Activity mapping corrected to H5P-to-Exercise; full reconciliation still required; Activity-composition and Syllabus/Percurso migration remain `DECISION REQUIRED`. |
@@ -201,10 +204,10 @@ Must move Attempts from Activity-level execution to Exercise-level execution and
 
 - append-only Exercise Attempts;
 - Result semantics;
+- Exercise-owned `assessment_mode`/`scoring_policy` and manual Evaluation evidence;
 - Activity Progress;
 - Activity Completion;
-- Activity Performance;
-- `needs_review`;
+- Activity Performance (`no_score`/`adequate`/`attention`/`needs_review`);
 - learner own-history;
 - relevant derived summaries.
 
@@ -238,8 +241,7 @@ The roadmap contains known unresolved gates, including:
 
 - GPL production implications for Lumi;
 - raw xAPI retention if retained;
-- Activity Performance `adequate`/`attention` aggregation;
-- Exercise scoreability / assessment semantics (must not be inferred from existing Attempts);
+- historical Attempt/Evaluation interpretation when an Exercise's assessment/scoring configuration changes after Attempts exist (SPEC-006 §5.12a);
 - authoring review/approval workflow and editing of published content with existing Attempts;
 - Activity-authoring usability validation;
 - B2C downgrade allocation policy;

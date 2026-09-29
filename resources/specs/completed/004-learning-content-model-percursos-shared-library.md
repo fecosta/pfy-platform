@@ -732,7 +732,7 @@ The following are explicitly **not blockers** for SPEC-004:
 
 The following unresolved decisions may affect this SPEC and must be re-checked at activation:
 
-- `DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS` (`docs/PRODUCT_DEFINITION.md` §12; SPEC-006 §11). If the decision places scoreability or assessment semantics on the Exercise content model, it must be resolved and reconciled here before activation. Until then, SPEC-004 must not introduce, default or infer an Exercise scoreability attribute.
+- `DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS` — **RESOLVED** (`docs/PRODUCT_DEFINITION.md` §4.3a, §12; SPEC-006 §4, §11). Scoreability is the Exercise-owned `assessment_mode`/`scoring_policy` configuration. This decision is implemented as an additive migration on the `exercises` table under SPEC-006 (§13a of that SPEC), not as a rework of this completed SPEC.
 - Decisions surfaced by the UX prototype that touch SPEC-004 surfaces (recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`; do not implement from the prototype):
   - `DECISION REQUIRED — MINHA BIBLIOTECA SEMANTICS` (UXC-17);
   - `DECISION REQUIRED — WRITTEN REFLECTION INPUT` (UXC-03);

@@ -1,7 +1,6 @@
 # SPEC-006 --- Exercise Attempts, Activity Progress & Results
 
-**Status:** PLANNED --- DECISION READY / ACTIVITY PERFORMANCE
-AGGREGATION & EXERCISE SCOREABILITY REQUIRED\
+**Status:** ACTIVE --- IMPLEMENTATION READY\
 **Depends on:** SPEC-004 --- Learning Content Model, Percursos & Shared
 Library; SPEC-005 --- H5P Runtime Production Integration\
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`,
@@ -157,6 +156,53 @@ Score does not determine Activity completion.
 
 Editorial/media blocks do not create artificial completion requirements.
 
+### Assessment mode and scoring policy
+
+Each Exercise carries two Exercise-owned configuration properties, never
+inferred from learner Attempt evidence (`docs/PRODUCT_DEFINITION.md`
+§4.3a):
+
+``` text
+assessment_mode: automatic | manual | none
+scoring_policy:  required | optional | none
+```
+
+`automatic` evaluation/result evidence comes from the Exercise's
+runtime/interactive implementation (H5P for MVP). `manual` evaluation
+requires an authorized human reviewer; the Exercise may complete/submit
+before evaluation exists. `none` requires no pedagogical evaluation.
+
+`scoring_policy` is independent of `assessment_mode`: `required` expects
+a score on valid evaluation, `optional` allows evaluation with or
+without a score, `none` means the Exercise is not scored.
+
+### Manual Evaluation
+
+For `manual`-assessment Exercises, a learner's Attempt/submission
+evidence is evaluated by a separate `Evaluation` record
+(`docs/PRODUCT_DEFINITION.md` §10a):
+
+``` text
+Exercise
+   ↓
+Attempt (learner submission/evidence)
+   ↓
+Evaluation (evaluator identity, feedback, optional score, timestamp)
+```
+
+Evaluation is never merged into or used to mutate learner-authored
+Attempt content. A manually assigned score is never labeled
+`client_reported`. An Attempt has at most one current Evaluation for
+MVP; re-review/correction workflows are not defined by this SPEC.
+
+Evaluator feedback tied to an Attempt is durable canonical learner
+history: the learner may later see it.
+
+Evaluation authorization (who may evaluate a given learner's submission)
+is owned by SPEC-008's Teacher-Student relationship boundary. SPEC-006
+defines only the minimal seam needed to persist Evaluation safely --
+see Section 10a.
+
 ### Activity Performance
 
 Activity Performance is separate from Activity Progress.
@@ -170,15 +216,30 @@ attention
 needs_review
 ```
 
-The approved `needs_review` rule is:
+An Exercise enters the Activity Performance denominator (an "evaluable
+scored Exercise") when `scoring_policy` is `required` or `optional` AND
+current valid score evidence exists -- the latest completed Attempt's
+score for `automatic` Exercises, or the current Evaluation's score for
+`manual` Exercises. `scoring_policy = none` Exercises, and
+`required`/`optional` Exercises without current valid score (e.g.
+awaiting manual review, or reviewed without a score), are excluded from
+the denominator without being treated as scored zero
+(`docs/PRODUCT_DEFINITION.md` §12).
+
+The approved deterministic aggregation rule is:
 
 ``` text
-scorable Exercises whose latest completed score is < 50%
----------------------------------------------------------
-total scorable Exercises
+proportion = (evaluable scored Exercises with current score < 50%)
+           / (total evaluable scored Exercises)
 
->= 50%
+no evaluable scored Exercise -> no_score
+proportion >= 50%            -> needs_review
+0% < proportion < 50%        -> attention
+proportion == 0%             -> adequate
 ```
+
+Do not use average score, highest score, lowest score, Exercise count
+or prototype mock data. Do not introduce a 70% threshold.
 
 `needs_review` does not:
 
@@ -189,18 +250,21 @@ total scorable Exercises
 -   change learner level;
 -   establish CEFR mastery.
 
-The authoritative documents do not yet define a complete deterministic
-Activity-level aggregation rule distinguishing `adequate` from
-`attention` in every remaining scored case.
-
-That missing rule is preserved as an explicit decision gate in this SPEC
-rather than invented by implementation.
-
-The authoritative documents also refer to scorable Exercises without
-defining how an Exercise is determined to be scorable. That is preserved
-as a separate decision gate (Section 11).
+A `manual`-assessment Exercise counts as completed for Activity Progress
+at learner submission, not at evaluation (see Section 5.10a); Activity
+Performance never delays or blocks Activity completion.
 
 ## 5. Scope
+
+### 5.0 Exercise assessment configuration
+
+Implement persistence for the Exercise-owned `assessment_mode`
+(`automatic`/`manual`/`none`) and `scoring_policy`
+(`required`/`optional`/`none`) defined in Section 4. This is new Exercise
+configuration; SPEC-004's `exercises` table exists but does not yet carry
+this contract (Section 13 lists the resulting schema change). H5P
+content/library metadata may seed an authoring-time default but is never
+authoritative over the persisted configuration.
 
 ### 5.1 Exercise Attempt persistence
 
@@ -302,6 +366,32 @@ complete/update the parent Attempt.
 Sub-content statements must not prematurely complete the Exercise
 Attempt.
 
+### 5.6a Manual Exercise submission and Evaluation persistence
+
+For `manual`-assessment Exercises, implement:
+
+-   persistence of the learner's submission/evidence on the Attempt
+    (content/body field; size bound and sanitization required for any
+    free-text/HTML learner content -- see Section 10);
+-   a distinct `Evaluation` record referencing the Attempt, carrying
+    evaluator identity, feedback, optional score (per `scoring_policy`),
+    evaluation timestamp and provenance;
+-   a minimal status distinguishing at least: submitted/awaiting review,
+    and reviewed. Exact naming (e.g. `assessment_status`) is
+    implementation freedom; the product semantics required are:
+    completed/submitted, awaiting manual review, reviewed with score,
+    reviewed without score.
+-   the smallest authorization primitive necessary to let an authorized
+    evaluator write an Evaluation for a given learner's Attempt safely
+    (server-side check plus RLS), without implementing SPEC-008's
+    invitation/relationship lifecycle. Where SPEC-008 has not yet
+    established the relationship table, the evaluator-authorization
+    check is a documented seam/dependency, not a full implementation
+    (Section 10).
+
+Evaluation must never mutate or overwrite the learner's Attempt/
+submission content.
+
 ### 5.7 Score provenance
 
 H5P scoring evidence originates from browser execution.
@@ -314,8 +404,14 @@ score_provenance = client_reported
 
 Do not label H5P score as server-authoritative.
 
+A manually assigned score carries a distinct provenance value
+representing human evaluator origin (e.g. `evaluator_reported`; exact
+naming is implementation freedom). It must never be stored as
+`client_reported`.
+
 The schema may support future provenance values, but SPEC-006 must not
-invent unsupported trust semantics.
+invent unsupported trust semantics beyond `client_reported` and the
+manual-evaluator provenance defined here.
 
 ### 5.8 Non-scoring Exercises
 
@@ -329,9 +425,13 @@ For non-scoring completed evidence:
 
 Missing score must never be converted to zero.
 
-### 5.9 Latest completed Attempt
+### 5.9 Latest completed Attempt / current Evaluation
 
-Current Exercise evidence uses the latest completed Attempt.
+Current Exercise evidence uses the latest completed Attempt for
+`automatic` Exercises. For `manual` Exercises, current score evidence
+(if any) comes from the current Evaluation of the latest completed
+Attempt; the Attempt is still "current" once submitted, independent of
+whether it has been evaluated.
 
 Examples:
 
@@ -377,7 +477,9 @@ required Exercises are completed.
 #### `completed`
 
 Every required Exercise in the Activity has at least one completed
-Attempt.
+Attempt. For `manual`-assessment Exercises, "completed" means the
+learner has submitted, regardless of evaluation state -- Activity
+Progress must not wait for manual review (Section 4, Manual Evaluation).
 
 The current product contract treats all Exercises in an Activity as
 required.
@@ -401,24 +503,44 @@ provided historical meaning is preserved.
 
 ### 5.12 Activity Performance
 
-Implement the authoritative portions of Activity Performance:
+Implement the full approved Activity Performance contract:
 
--   `no_score`;
--   `needs_review`;
--   use of latest completed Attempt per Exercise;
+-   `no_score`, `adequate`, `attention`, `needs_review`;
+-   the evaluable-scored-Exercise denominator (Section 4, Activity
+    Performance) -- `scoring_policy` in (`required`, `optional`) AND
+    current valid score evidence exists;
+-   use of latest completed Attempt (`automatic`) or current Evaluation
+    (`manual`) per Exercise;
 -   separation from Activity Progress.
 
-`no_score` applies when there is no applicable scorable completed
-Exercise evidence from which Activity performance can be evaluated.
+Deterministic rule (proportion = evaluable scored Exercises with
+current score < 50% / total evaluable scored Exercises):
 
-`needs_review` applies when 50% or more of the Activity's scorable
-Exercises have a latest completed score below 50%.
+``` text
+no evaluable scored Exercise -> no_score
+proportion >= 50%            -> needs_review
+0% < proportion < 50%        -> attention
+proportion == 0%             -> adequate
+```
 
-The implementation must not invent the unresolved Activity-level
-distinction between `adequate` and `attention`.
+Do not use average/highest/lowest score, Exercise count or prototype
+mock data. Do not introduce a 70% threshold.
 
-That distinction must be resolved before this SPEC is promoted to
-`ACTIVE — IMPLEMENTATION READY`.
+### 5.12a Historical assessment/scoring configuration changes
+
+Attempts and Evaluations remain historical evidence. Changing an
+Exercise's `assessment_mode`/`scoring_policy` must never rewrite prior
+Attempt/submission/Evaluation records. Current Activity Performance is a
+live view computed from the Exercise's **current** configuration applied
+to current valid score evidence -- it is not a replay of historical
+configuration.
+
+If implementation evidence surfaces a configuration-change scenario this
+SPEC does not resolve (e.g. reclassifying already-scored historical
+evidence under a newly `scoring_policy = none` Exercise), return
+`DECISION REQUIRED — HISTORICAL ASSESSMENT CONFIGURATION SEMANTICS`
+rather than inventing a resolution. This must not block the rest of
+SPEC-006's implementation.
 
 ### 5.13 Learner feedback contract
 
@@ -442,9 +564,10 @@ history.
 At minimum, the model/API must support retrieval of:
 
 -   Exercise Attempt history;
--   latest completed Exercise evidence;
+-   latest completed Exercise evidence, including any current Evaluation
+    (feedback and/or score) for `manual` Exercises;
 -   Activity Progress;
--   Activity Performance where deterministically defined.
+-   Activity Performance, fully defined per Section 5.12.
 
 The learner must not gain access to another learner's Attempt history
 through identifiers or query manipulation.
@@ -534,17 +657,40 @@ Numbers are monotonic and concurrency-safe.
 
 Exercise completion is independent from score.
 
+### Completion / review / score separation invariant
+
+Completion, manual review and score are three distinct concepts
+(`docs/PRODUCT_DEFINITION.md` §10a). A learner may complete/submit a
+`manual` Exercise before review exists. A review may exist without a
+score. Implementation must not collapse these into one status.
+
 ### Score nullability invariant
 
 No score means `null`, not `0`.
 
 ### Provenance invariant
 
-H5P browser score evidence is `client_reported`.
+H5P browser score evidence is `client_reported`. Manually assigned score
+evidence carries a distinct evaluator-origin provenance and must never
+be stored as `client_reported`.
+
+### Evaluation immutability invariant
+
+Evaluation is a record distinct from the Attempt/submission it evaluates
+and must never mutate or overwrite learner-authored Attempt content.
+
+### Scoreability invariant
+
+`assessment_mode` and `scoring_policy` are Exercise-owned configuration,
+never inferred from the presence or absence of scores in existing
+Attempts. An unattempted Exercise has known assessment/scoring
+semantics.
 
 ### Latest-evidence invariant
 
-Current Exercise performance uses the latest completed Attempt.
+Current Exercise performance uses the latest completed Attempt
+(`automatic`) or the current Evaluation of the latest completed Attempt
+(`manual`).
 
 ### Activity completion invariant
 
@@ -634,90 +780,100 @@ At minimum:
 -   direct database access is protected by applicable RLS/server
     authorization conventions.
 
-Teacher access is not introduced here.
+For manual Evaluation (minimal seam only -- full lifecycle is SPEC-008):
+
+-   the learner owns their submission/Attempt content and cannot alter
+    an Evaluation of it;
+-   one learner must not read another learner's submission or
+    Evaluation;
+-   evaluator identity is not exposed beyond what the product contract
+    permits;
+-   writing an Evaluation requires an explicit authorization check tied
+    to the evaluator's relationship to the learner. Until SPEC-008
+    exists, this SPEC must implement the smallest server-side/RLS
+    primitive sufficient to prevent an arbitrary authenticated user from
+    writing an Evaluation for an arbitrary learner's Attempt (e.g.
+    restricting Evaluation writes to a privileged/service-role context
+    invoked by a bounded internal action), and must document the
+    dependency on SPEC-008 replacing that primitive with real
+    relationship-scoped authorization;
+-   service-role shortcuts must not become the general authorization
+    model -- they are acceptable only as the documented minimal seam
+    above.
+-   free-text learner submission content and evaluator feedback require
+    sanitization/size bounds consistent with the platform's existing
+    user-generated-content handling to avoid stored-XSS and unbounded
+    storage; do not render either as trusted HTML without sanitization.
+
+Teacher access lifecycle (invitation, acceptance, revocation, listing)
+is not introduced here.
 
 Institutional access is not introduced here.
 
-## 11. Activity Performance Decision Gate
+## 11. Activity Performance Decision Record (resolved)
 
-Before activation, PFY must define the remaining deterministic
-Activity-level aggregation rule for:
+This section previously blocked activation. Both decisions below are now
+approved and reconciled into `docs/PRODUCT_DEFINITION.md` §4.3a/§12 and
+`docs/ARCHITECTURE.md` §7/§13.
+
+### Exercise scoreability / assessment semantics -- RESOLVED
+
+Scoreability is defined by two Exercise-owned configuration properties,
+never inferred from Attempt evidence:
 
 ``` text
-adequate
-attention
+assessment_mode: automatic | manual | none
+scoring_policy:  required | optional | none
 ```
 
-The existing authoritative contracts already define:
+This addresses the open questions from the prior gate:
 
--   `no_score`;
--   `needs_review`;
--   Exercise-level low evidence for the `needs_review` rule as score
-    `< 50%`;
--   latest completed Attempt as current Exercise evidence.
+-   **where scoreability is defined:** on the PFY Exercise, not on H5P
+    content/library metadata. H5P metadata may seed an authoring-time
+    default only;
+-   **H5P content that completes without a score or reports a maximum
+    score of zero:** modeled as `scoring_policy = none` (or `optional`
+    with no score produced), not as a zero score;
+-   **content types whose scoring depends on configuration:** the PFY
+    Exercise configuration is authoritative regardless of the
+    implementation technology's own configurability;
+-   **scoreability changing after Attempts exist:** history is
+    preserved (Section 5.12a); current Activity Performance uses current
+    configuration; an unresolved historical-interpretation scenario
+    returns `DECISION REQUIRED — HISTORICAL ASSESSMENT CONFIGURATION
+    SEMANTICS` rather than inventing behavior.
 
-They do not currently define how every scored Activity that does **not**
-satisfy `needs_review` is divided between `adequate` and `attention`.
+This affects SPEC-004 (Exercise model gains `assessment_mode`/
+`scoring_policy`) -- see Section 13.
 
-Implementation must not infer this from:
+### Activity Performance adequate/attention aggregation -- RESOLVED
 
--   average score;
--   highest score;
--   lowest score;
--   number of Exercises;
--   prototype mock data;
--   implementation convenience.
+``` text
+proportion = (evaluable scored Exercises with current score < 50%)
+           / (total evaluable scored Exercises)
 
-### Exercise scoreability / assessment semantics
+no evaluable scored Exercise -> no_score
+proportion >= 50%            -> needs_review
+0% < proportion < 50%        -> attention
+proportion == 0%             -> adequate
+```
 
-`DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`
+An "evaluable scored Exercise" is defined in Section 5.12. This is not
+average, highest, lowest score, Exercise count or prototype mock data.
 
-The `needs_review` rule and `no_score` depend on the set of scorable
-Exercises in an Activity. The authoritative documents do not define how
-an Exercise is determined to be scorable.
+### UX prototype input -- superseded
 
-Implementation must not infer scoreability from the presence or absence
-of scores in existing Attempts. Under that inference, scoreability would
-depend on learner evidence, an unattempted Exercise would have unknown
-scoreability, and the `needs_review` denominator would vary per learner.
-
-The decision must at least address:
-
--   where scoreability is defined (Exercise content model, H5P
-    content/library metadata, authoring configuration or another
-    source);
--   H5P content that completes without a score or reports a maximum
-    score of zero;
--   content types whose scoring depends on their configuration;
--   what happens when an Exercise's scoreability changes after Attempts
-    exist.
-
-This decision may also affect SPEC-004 (Exercise model) and SPEC-005
-(H5P metadata).
-
-### Proposal input from the UX prototype (not approved)
-
-The UX prototype classifies an individual Exercise's latest completed
-score as `>= 70%` adequate, `>= 50%` attention and `< 50%` needs_review
-(`resources/ux/PROTOTYPE-CONFLICTS.md`, UXC-13).
-
-This is recorded only as input to the decisions above. It is not
-approved behavior:
-
--   the 70% threshold is not approved;
--   Exercise-level performance bands are not part of the product
-    contract;
--   `needs_review` is an Activity-level state, not an Exercise label;
--   the prototype defines no Activity-level rule separating `adequate`
-    from `attention`.
+The UX prototype's per-Exercise `>= 70%` adequate / `>= 50%` attention /
+`< 50%` needs_review bands (`resources/ux/PROTOTYPE-CONFLICTS.md`,
+UXC-13) were recorded only as input and are **not** the approved rule.
+The approved rule above is Activity-level, uses no 70% threshold, and
+`needs_review` remains an Activity-level state, never an Exercise label.
+UXC-12 and UXC-13 have been updated to reflect this resolution.
 
 ### Gate state
 
-Until these decisions are approved and added to authoritative product
-documentation, this SPEC remains:
-
-**PLANNED --- DECISION READY / ACTIVITY PERFORMANCE AGGREGATION &
-EXERCISE SCOREABILITY REQUIRED**
+Both decisions are resolved and reconciled into authoritative
+documentation. This gate no longer blocks activation.
 
 ## 12. Expected Behavior
 
@@ -743,23 +899,40 @@ After implementation:
 15. score never determines Activity completion;
 16. a completed Activity remains completed when an Exercise is repeated;
 17. `needs_review` can coexist with `completed`;
-18. `needs_review` follows the approved 50%-of-scorable-Exercises rule;
+18. `needs_review` follows the approved evaluable-scored-Exercise rule
+    (Section 5.12);
 19. Activity Performance does not block Percurso progression;
-20. learner own-history is authorization-safe.
+20. learner own-history is authorization-safe;
+21. a `manual`-assessment Exercise completes the Activity at learner
+    submission, before any Evaluation exists;
+22. an Evaluation never mutates the learner's Attempt/submission
+    content;
+23. a manually assigned score is never stored as `client_reported`;
+24. an Exercise with `scoring_policy = optional` reviewed without a
+    score is excluded from the Activity Performance denominator without
+    being treated as a zero score;
+25. Activity Performance deterministically resolves to `adequate`,
+    `attention`, `needs_review` or `no_score` per the rule in Section
+    5.12.
 
 ## 13. Impact Surface
 
 ### Directly affected
 
--   PostgreSQL learning-evidence schema/migrations;
+-   PostgreSQL learning-evidence schema/migrations, including a new
+    `exercises.assessment_mode`/`scoring_policy` configuration (additive
+    migration on the SPEC-004 `exercises` table -- see Section 13a);
 -   Exercise Attempt domain/application layer;
+-   manual submission storage (Attempt content/body) and Evaluation
+    domain/application layer;
 -   H5P tracking adapter/event ingestion;
 -   Attempt token/context mechanism;
 -   Activity Progress derivation/persistence;
 -   Activity Performance derivation/persistence;
--   learner history APIs/read models;
+-   learner history APIs/read models, including Evaluation retrieval;
 -   learner result/completion UI required by this SPEC;
--   RLS/server authorization;
+-   RLS/server authorization, including the minimal Evaluation-write
+    authorization seam;
 -   tests;
 -   documentation.
 
@@ -769,11 +942,25 @@ After implementation:
 -   Exercise identity ownership;
 -   H5P content/runtime mapping;
 -   Activity authoring;
--   teacher-student relationship model;
--   teacher monitoring;
+-   teacher-student relationship lifecycle (invitation/acceptance/
+    revocation) -- SPEC-006 implements only the minimal Evaluation-write
+    authorization seam, not the relationship model;
+-   teacher monitoring UI/workflow;
 -   institutional reporting;
 -   licensing/billing;
 -   legacy migration strategy.
+
+### 13a. Exercise model schema impact (SPEC-004 surface)
+
+This SPEC requires an additive migration adding `assessment_mode` and
+`scoring_policy` columns/constraints to the existing SPEC-004
+`exercises` table (`supabase/migrations/
+20260924000000_learning_content_foundation.sql`). `implementation_metadata`
+remains a free-form jsonb placeholder today with no defined fields; this
+SPEC does not require reusing it -- typed columns are preferred for an
+invariant this important. No existing data needs backfill beyond a safe
+default (implementation freedom), since no Exercises or Attempts exist
+in production yet.
 
 ### Downstream dependencies
 
@@ -846,18 +1033,39 @@ SPEC-006 establishes canonical learning evidence consumed by:
 
 -   [ ] Activity Performance is independent from Activity Progress.
 -   [ ] `no_score` behavior follows the authoritative contract.
--   [ ] `needs_review` uses latest completed Attempt evidence.
--   [ ] `needs_review` triggers when \>= 50% of scorable Exercises have
-    latest completed score \< 50%.
--   [ ] Non-scoring Exercises are excluded from the `needs_review`
-    denominator, classified according to the approved scoreability
-    decision (Section 11) and not inferred from learner Attempt
-    evidence.
+-   [ ] `needs_review`/`attention`/`adequate` use current Exercise
+    evidence (latest completed Attempt for `automatic`, current
+    Evaluation for `manual`).
+-   [ ] `needs_review` triggers when \>= 50% of evaluable scored
+    Exercises have current score \< 50%.
+-   [ ] `attention` triggers when \> 0% and \< 50% of evaluable scored
+    Exercises have current score \< 50%.
+-   [ ] `adequate` triggers when 0% of evaluable scored Exercises have
+    current score \< 50% (at least one evaluable scored Exercise
+    exists).
+-   [ ] Exercises with `scoring_policy = none`, and `optional`/
+    `required` Exercises without current valid score, are excluded from
+    the denominator and not treated as scored zero.
 -   [ ] `needs_review` does not make Activity incomplete.
 -   [ ] `needs_review` does not block Percurso progression.
 -   [ ] No unsupported average/mastery metric is introduced.
--   [ ] `adequate`/`attention` aggregation is implemented only after the
-    decision gate in Section 11 is resolved.
+-   [ ] No 70% threshold is introduced.
+
+### Manual Evaluation
+
+-   [ ] `manual`-assessment Exercise completes the Activity at learner
+    submission, independent of review state.
+-   [ ] Evaluation never mutates learner Attempt/submission content.
+-   [ ] Manually assigned score provenance is distinct from
+    `client_reported`.
+-   [ ] `scoring_policy = optional` reviewed without score is valid and
+    excluded from the Activity Performance denominator.
+-   [ ] `scoring_policy = required` Exercise without current valid score
+    is excluded from the denominator (not scored zero).
+-   [ ] Evaluation write requires the minimal authorization seam
+    (Section 10); an arbitrary authenticated user cannot write an
+    Evaluation for an arbitrary learner's Attempt.
+-   [ ] Free-text submission/feedback content is sanitized/size-bounded.
 
 ### Learner history
 
@@ -865,6 +1073,8 @@ SPEC-006 establishes canonical learning evidence consumed by:
 -   [ ] Learner can retrieve own current Activity Progress.
 -   [ ] Learner can retrieve deterministically defined Activity
     Performance.
+-   [ ] Learner can retrieve any current Evaluation (feedback/score) on
+    their own Attempts.
 -   [ ] Learner cannot retrieve another learner's history.
 
 ### Validation
@@ -876,6 +1086,14 @@ SPEC-006 establishes canonical learning evidence consumed by:
 -   [ ] Browser/E2E tests cover completion and repetition behavior.
 -   [ ] Browser/E2E tests cover scoring and non-scoring Exercises.
 -   [ ] Browser/E2E tests cover an Activity with multiple Exercises.
+-   [ ] Tests cover a `manual`-assessment Exercise: submission,
+    Activity completion before review, Evaluation with score, Evaluation
+    without score (`scoring_policy = optional`).
+-   [ ] Tests cover Activity Performance resolving to each of
+    `no_score`/`adequate`/`attention`/`needs_review` for a mixed
+    automatic+manual Activity.
+-   [ ] Negative authorization tests cover Evaluation write/read
+    boundaries (Section 10).
 -   [ ] Type-check/lint/build checks pass.
 -   [ ] No authoritative product/architecture contract was silently
     changed.
@@ -907,7 +1125,10 @@ Implementation freedom does not include changing:
 -   `client_reported` H5P score provenance;
 -   Activity completion rule;
 -   separation of Activity Progress and Performance;
--   approved `needs_review` rule;
+-   the approved `no_score`/`adequate`/`attention`/`needs_review` rule;
+-   the completion/review/score separation (Section 4, Manual
+    Evaluation);
+-   Evaluation as a record distinct from Attempt/submission content;
 -   authorization boundaries.
 
 If implementation evidence requires changing one of these contracts,
@@ -950,39 +1171,45 @@ Not currently defined.
 Not currently defined outside explicit denominators such as Percurso
 completed Activities / total Activities.
 
+### Teacher-Student relationship lifecycle
+
+Invitation, acceptance, revocation and relationship listing remain
+SPEC-008. SPEC-006 implements only the minimal Evaluation-write
+authorization seam described in Section 10.
+
+### Re-review / Evaluation correction workflow
+
+Not defined by MVP. One current Evaluation per Attempt is sufficient.
+
 ## 17. Knowledge Updates Required
 
 At completion:
 
-1.  document the verified Attempt/Result physical schema;
+1.  document the verified Attempt/Result/Evaluation physical schema;
 2.  document concurrency strategy for attempt numbering;
 3.  document attempt-context/token flow;
 4.  document supported H5P event-normalization behavior;
-5.  document score provenance and null semantics;
+5.  document score provenance and null semantics, including the
+    evaluator-origin provenance value used for manual scores;
 6.  document Activity Progress derivation/persistence;
-7.  document the final approved Activity Performance aggregation;
-8.  update `docs/ARCHITECTURE.md` only if verified implementation
+7.  document the implemented Activity Performance aggregation;
+8.  document the minimal Evaluation-write authorization seam and its
+    replacement dependency on SPEC-008;
+9.  update `docs/ARCHITECTURE.md` only if verified implementation
     establishes a durable architecture clarification;
-9.  update `resources/specs/README.md`;
-10. reconcile SPEC-008, SPEC-011 and SPEC-015 against the implemented
+10. update `resources/specs/README.md`;
+11. reconcile SPEC-008, SPEC-011 and SPEC-015 against the implemented
     canonical evidence model;
-11. move this SPEC to `completed/` only after implementation, validation
+12. move this SPEC to `completed/` only after implementation, validation
     and durable knowledge reconciliation.
 
 ## 18. Open Questions / Blockers
 
 ### Blocking before activation
 
-`DECISION REQUIRED — ACTIVITY PERFORMANCE ADEQUATE/ATTENTION AGGREGATION`
-
-PFY must define how a scored Activity that does not satisfy
-`needs_review` is deterministically classified as `adequate` versus
-`attention`.
-
-`DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`
-
-PFY must define how an Exercise is determined to be scorable,
-independently of learner Attempt evidence (Section 11).
+None. Both prior gates (`ACTIVITY PERFORMANCE ADEQUATE/ATTENTION
+AGGREGATION` and `EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`) are
+resolved -- see Section 11.
 
 ### Non-blocking
 
@@ -997,26 +1224,38 @@ The UX prototype shows a learner's "current Percurso"
 must not be implemented from the prototype. Percurso progress itself
 remains derived from Activity completion.
 
+`HISTORICAL ASSESSMENT CONFIGURATION SEMANTICS`
+
+Non-blocking for activation; may surface during implementation per
+Section 5.12a if an unresolved historical-interpretation scenario is
+encountered. Return `DECISION REQUIRED — HISTORICAL ASSESSMENT
+CONFIGURATION SEMANTICS` at that point rather than inventing behavior.
+
+`EVALUATION AUTHORIZATION SEAM`
+
+Non-blocking: Section 10 defines the smallest safe primitive pending
+SPEC-008. This is a documented implementation dependency, not an
+activation blocker.
+
 ## 19. Activation Gate
 
-This SPEC remains:
+This SPEC is:
 
-**PLANNED --- DECISION READY / ACTIVITY PERFORMANCE AGGREGATION &
-EXERCISE SCOREABILITY REQUIRED**
+**ACTIVE --- IMPLEMENTATION READY**
 
-Promote to `ACTIVE — IMPLEMENTATION READY` only when:
+Both prior blocking decisions are resolved and reconciled into
+`docs/PRODUCT_DEFINITION.md` and `docs/ARCHITECTURE.md`:
 
 ``` text
-SPEC-005 completed/coherence state sufficient for tracking integration
-+ Activity Performance adequate/attention rule approved
-+ Exercise scoreability/assessment semantics approved
+SPEC-005 completed (final re-review remediation closed)
++ Activity Performance adequate/attention rule approved (Section 11)
++ Exercise scoreability/assessment semantics approved (Section 11)
++ manual Evaluation semantics explicit (Section 4, 5.6a, 5.12a)
 + authoritative documentation updated
 + repository state revalidated
-+ no new blocking contradiction
++ no remaining blocking contradiction
 = ACTIVE — IMPLEMENTATION READY
 ```
-
-Do not implement from `planned/`.
 
 ## 20. Completion Gate
 
@@ -1029,11 +1268,12 @@ append-only Exercise Attempts
 + concurrency-safe numbering
 + secure attempt-bound H5P normalization
 + scoring/non-scoring semantics
-+ latest completed Attempt semantics
++ manual Evaluation semantics (submission, review, optional score)
++ latest completed Attempt / current Evaluation semantics
 + Activity Progress
 + complete approved Activity Performance
-+ learner own-history
-+ authorization/RLS verification
++ learner own-history including Evaluation retrieval
++ authorization/RLS verification, including Evaluation seam
 + browser validation
 + documentation reconciliation
 = completed

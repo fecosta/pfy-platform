@@ -148,7 +148,7 @@ The teacher-facing evidence text ("X de Y exercícios pontuáveis ficaram abaixo
 
 ### UXC-12 — Exercise scoreability inferred from Attempt evidence
 
-**Class:** `CONFLICT` (prototype logic) + `DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`
+**Class:** `CONFLICT` (prototype logic) — **DECIDED, superseded**
 
 **Prototype:** `activityNeedsReview()` and the student-history mapping treat an Exercise as scorable when its latest score is non-null.
 
@@ -158,13 +158,13 @@ This inference must not be implemented. Under it:
 - an unattempted Exercise would have unknown scoreability;
 - the `needs_review` denominator would vary per learner.
 
-How PFY determines whether an Exercise is scorable, and the related assessment semantics, remain an unresolved product-model decision. See `PRODUCT_DEFINITION.md` §12 and SPEC-006 §11.
+**Decided:** scoreability is the Exercise-owned `assessment_mode`/`scoring_policy` configuration, never inferred from Attempt evidence. See `PRODUCT_DEFINITION.md` §4.3a, §12 and SPEC-006 §4/§11.
 
-**Affects:** SPEC-004 (possibly the Exercise model), SPEC-005, SPEC-006.
+**Affects:** SPEC-004 (Exercise model), SPEC-005, SPEC-006.
 
 ### UXC-13 — Performance thresholds (50% / 70%)
 
-**Class:** `PROPOSAL` — input to `DECISION REQUIRED — ACTIVITY PERFORMANCE ADEQUATE/ATTENTION AGGREGATION`
+**Class:** `PROPOSAL` — **not approved; superseded by the decided Activity-level rule**
 
 **Prototype:** `performanceLabel(pct)` classifies an individual Exercise's latest completed score:
 
@@ -174,13 +174,10 @@ How PFY determines whether an Exercise is scorable, and the related assessment s
 <  50%  needs_review
 ```
 
-This is not approved behavior.
+This is not approved behavior and remains recorded only as historical input to the decision below, not as authoritative behavior.
 
-- Only the Activity-level `needs_review` rule is approved: 50% or more of scorable Exercises with latest completed score below 50%.
-- The 70% threshold, Exercise-level performance bands and the use of `needs_review` as an Exercise-level label are not approved.
-- The prototype defines no Activity-level rule separating `adequate` from `attention`.
-
-See SPEC-006 §11.
+- The 70% threshold, Exercise-level performance bands and the use of `needs_review` as an Exercise-level label are not approved and are not part of the product contract.
+- The approved rule is Activity-level, over the proportion of evaluable scored Exercises (`PRODUCT_DEFINITION.md` §4.3a) with current score < 50%: `>= 50%` -> `needs_review`; `> 0% and < 50%` -> `attention`; `0%` -> `adequate`; no evaluable scored Exercise -> `no_score`. See `PRODUCT_DEFINITION.md` §12 and SPEC-006 §11.
 
 ### UXC-14 — "Current Percurso" of a learner
 

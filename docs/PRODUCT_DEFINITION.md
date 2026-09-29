@@ -250,6 +250,26 @@ An Exercise:
 
 For MVP, H5P is the primary interactive implementation.
 
+### 4.3a Assessment mode and scoring policy
+
+An Exercise carries two independent, Exercise-owned configuration properties. Neither is inferred from learner Attempt evidence; an unattempted Exercise still has known assessment/scoring semantics.
+
+```text
+assessment_mode:
+  automatic — evaluation/result evidence is produced by the Exercise's runtime/interactive implementation (H5P is the primary MVP implementation)
+  manual    — a learner submission requires evaluation by an authorized human reviewer (typically a Teacher); the Exercise may complete/submit before evaluation exists
+  none      — the Exercise may produce completion evidence but requires no pedagogical evaluation
+```
+
+```text
+scoring_policy:
+  required — a valid evaluation is expected to contain a score
+  optional — a valid evaluation may or may not contain a score (common for manual open-ended production)
+  none     — the Exercise is not scored
+```
+
+H5P content/library capability may inform authoring-time defaults but is never authoritative over the persisted `assessment_mode`/`scoring_policy` configuration.
+
 ### 4.4 H5P-backed Exercise
 
 An H5P-backed Exercise associates a PFY Exercise with one H5P runtime content identity through the PFY H5P Adapter.
@@ -449,6 +469,34 @@ For H5P:
 score_provenance = client_reported
 ```
 
+A manually assigned score carries a distinct provenance value representing human evaluator origin. It must never be labeled `client_reported` merely because it enters through a browser.
+
+## 10a. Manual Evaluation
+
+Completion, review and score are distinct concepts. A learner may complete/submit a `manual`-assessment Exercise before any review exists. A review may exist without a score. A score originates from either automatic runtime evidence or manual Evaluation.
+
+```text
+Exercise
+   ↓
+Attempt (learner submission/evidence)
+   ↓
+Evaluation (human reviewer output)
+```
+
+An Evaluation is a distinct record from the learner's Attempt/submission evidence. It is never merged into or used to mutate learner-authored content. At minimum it carries:
+
+- evaluator identity;
+- feedback;
+- an optional score (required only when `scoring_policy = required`);
+- evaluation timestamp;
+- provenance/audit information distinguishing it from automatic evidence.
+
+An Attempt may have zero or one current Evaluation. A later Evaluation replacing an evaluator's assessment is a product decision for correction workflows and is not defined by MVP; SPEC-006 need only support a single current Evaluation per Attempt unless evidence requires otherwise.
+
+Evaluator feedback tied to a learner's Attempt is part of the learner's durable canonical learning history: the learner may later see it, it is scoped to the specific Attempt/submission, and it is not raw H5P/runtime state.
+
+Manual evaluation authorization (who may evaluate which learner's submission) is owned by the Teacher-Student relationship boundary (SPEC-008), not by SPEC-006.
+
 ## 11. Activity progress
 
 Activity progress is a PFY-owned domain state.
@@ -463,9 +511,12 @@ completed
 
 An Activity becomes completed when all required Exercises belonging to the Activity have completed.
 
+A `manual`-assessment Exercise is completed at learner submission, not at teacher review. Activity completion must not wait for manual evaluation. This is a deliberate consequence of the completion/review/score separation (§10a): Activity completion tracks execution, not judgement of quality.
+
 Activity completion:
 
 - does not depend on score;
+- does not depend on manual review having occurred;
 - does not imply passing;
 - does not imply mastery;
 - does not require editorial/media blocks to generate artificial completion events.
@@ -483,9 +534,49 @@ attention
 needs_review
 ```
 
-PFY derives Activity performance from the latest completed Attempts of its scorable Exercises.
+### Evaluable scored Exercise (Exercise scoreability)
 
-`needs_review` is triggered when **50% or more of the Activity's scorable Exercises have a latest completed score below 50%**.
+Scoreability is an Exercise-owned configuration property, never inferred from learner Attempt evidence (an unattempted Exercise still has known scoreability). An Exercise enters the Activity Performance denominator when:
+
+```text
+evaluable scored Exercise
+=
+Exercise scoring_policy in (required, optional)
+AND
+there is current valid score evidence
+```
+
+Current valid score evidence is the score on the Exercise's latest completed/evaluated evidence (§10, §10a): for `automatic` assessment, the latest completed Attempt's score; for `manual` assessment, the current Evaluation's score when present.
+
+An Exercise with `scoring_policy = none` never enters the denominator. An Exercise with `scoring_policy = optional` that has been completed/reviewed without a score does **not** enter the denominator — its absence of score is not evidence of low performance. A `scoring_policy = required` Exercise without current valid score evidence (e.g. `manual` and `awaiting_review`) also does not enter the current denominator; it is not treated as scored zero and does not block computing performance from the Exercises that do have valid evidence.
+
+This must not change Activity Progress (completion remains as defined in §11).
+
+### Deterministic aggregation rule
+
+PFY derives Activity performance from the proportion of evaluable scored Exercises (defined above) with current valid score below 50%:
+
+```text
+no_score
+
+No Exercise in the Activity currently qualifies as an evaluable scored Exercise.
+
+needs_review
+
+>= 50% of evaluable scored Exercises have current score < 50%.
+
+attention
+
+> 0% and < 50% of evaluable scored Exercises have current score < 50%.
+(At least one evaluable scored Exercise scores below 50%, but not enough to trigger needs_review.)
+
+adequate
+
+0% of evaluable scored Exercises have current score < 50%
+(every evaluable scored Exercise scores >= 50%).
+```
+
+Do not use average score, highest score, lowest score, Exercise count, or prototype mock data to compute this state. Do not introduce a 70% threshold.
 
 `needs_review`:
 
@@ -496,12 +587,11 @@ PFY derives Activity performance from the latest completed Attempts of its scora
 - does not change learner level;
 - does not imply CEFR mastery or lack of mastery.
 
-The following Activity Performance semantics are not yet defined:
+### Historical assessment/scoring configuration changes
 
-- `DECISION REQUIRED — EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`: this document refers to scorable Exercises but does not define how an Exercise is determined to be scorable. Scoreability must not be inferred from the presence or absence of scores in existing Attempts.
-- `DECISION REQUIRED — ACTIVITY PERFORMANCE ADEQUATE/ATTENTION AGGREGATION`: the rule that distinguishes `adequate` from `attention` for scored Activities that do not satisfy `needs_review` is not defined.
+Attempts remain historical evidence; changing an Exercise's `assessment_mode`/`scoring_policy` must never rewrite prior Attempt/submission/Evaluation evidence. Current Activity Performance derives from the Exercise's **current** configuration applied to current valid score evidence — it is a live view, not a replay of historical configuration. If a change in configuration after Attempts exist creates an interpretation this document does not resolve (e.g. reclassifying historical scored evidence under a newly `none`-scored Exercise), implementation must return `DECISION REQUIRED — HISTORICAL ASSESSMENT CONFIGURATION SEMANTICS` rather than invent a resolution.
 
-Thresholds shown in the UX prototype are proposals only (see `resources/ux/PROTOTYPE-CONFLICTS.md`, UXC-13).
+The thresholds previously shown in the UX prototype (`resources/ux/PROTOTYPE-CONFLICTS.md`, UXC-13, a 70%/50% per-Exercise band) are **not** approved and are superseded by the Activity-level rule above; the prototype proposal remains recorded only as historical input, not as authoritative behavior.
 
 ## 13. Learner feedback
 

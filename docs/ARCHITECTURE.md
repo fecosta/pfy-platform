@@ -128,6 +128,7 @@ These are logical product/domain boundaries and are not necessarily independentl
 - Syllabus/Percurso;
 - ordered Activity membership in Percursos;
 - Exercise Attempts/Results;
+- manual Evaluation evidence (evaluator identity, feedback, optional score, timestamp) as a record distinct from learner Attempt/submission content;
 - Activity Progress;
 - Activity Performance or sufficient canonical evidence to derive it;
 - Percurso progress or sufficient canonical evidence to derive it;
@@ -193,6 +194,7 @@ An Exercise:
 - may produce Attempts;
 - may be implemented by H5P;
 - participates in Activity Completion;
+- carries its own `assessment_mode` (`automatic`/`manual`/`none`) and `scoring_policy` (`required`/`optional`/`none`), never inferred from Attempt evidence (`PRODUCT_DEFINITION.md` §4.3a);
 - may produce scorable or non-scorable evidence.
 
 ## 8. H5P identity mapping
@@ -241,6 +243,10 @@ For each learner and Exercise:
 - previous Attempts remain historical evidence.
 
 The server creates the Attempt and issues an unguessable Attempt token/context.
+
+### Manual Evaluation
+
+For `manual`-assessment Exercises, a distinct Evaluation record represents human-reviewer output (evaluator identity, feedback, optional score, timestamp). Evaluation is never merged into the learner's Attempt/submission content (`PRODUCT_DEFINITION.md` §10a). Evaluation authorization (who may evaluate a given learner's submission) is owned by the Teacher-Student relationship boundary (SPEC-008); SPEC-006 defines only the minimal seam needed to persist Evaluation safely.
 
 ## 11. H5P tracking
 
@@ -304,21 +310,24 @@ attention
 needs_review
 ```
 
-Current Exercise evidence uses the latest completed Attempt for each Exercise.
+Current Exercise evidence uses the latest completed Attempt for `automatic` Exercises, or the current Evaluation for `manual` Exercises (`PRODUCT_DEFINITION.md` §10a).
 
-The current `needs_review` rule is:
+An Exercise enters the Activity Performance denominator (an "evaluable scored Exercise") only when its `scoring_policy` is `required` or `optional` AND it currently has valid score evidence. `scoring_policy = none`, and `optional`/`required` Exercises without current valid score, are excluded from the denominator without being treated as zero (`PRODUCT_DEFINITION.md` §12).
 
 ```text
-scorable Exercises with latest completed score < 50%
+evaluable scored Exercises with current score < 50%
 ------------------------------------------------------
-total scorable Exercises
+total evaluable scored Exercises
 
->= 50%
+>= 50%  -> needs_review
+>  0%   -> attention
+=  0%   -> adequate (requires >= 1 evaluable scored Exercise)
+no evaluable scored Exercise -> no_score
 ```
 
-No Activity Performance state may change Activity completion or block Percurso progression.
+No Activity Performance state may change Activity completion or block Percurso progression. A `manual`-assessment Exercise completes the Activity at learner submission, independent of when/whether it is evaluated (`PRODUCT_DEFINITION.md` §11).
 
-Exercise scoreability / assessment semantics and the `adequate`/`attention` aggregation remain `DECISION REQUIRED` (see `PRODUCT_DEFINITION.md` §12).
+Exercise scoreability (`assessment_mode`/`scoring_policy`) is an Exercise-owned configuration property, never inferred from Attempt evidence (`PRODUCT_DEFINITION.md` §4.3a).
 
 ## 14. Percurso progress
 

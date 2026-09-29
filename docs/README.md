@@ -109,7 +109,10 @@ Current decisions include:
 - client-reported H5P score provenance;
 - Activity Completion independent from score;
 - Activity Performance independent from completion;
-- `needs_review` when at least 50% of scorable Exercises have a latest completed score below 50%;
+- `needs_review` when at least 50% of evaluable scored Exercises have a latest completed score below 50%;
+- Exercise-owned `assessment_mode` (automatic/manual/none) and `scoring_policy` (required/optional/none), never inferred from Attempt evidence;
+- manual Evaluation as a record distinct from learner Attempt/submission evidence;
+- deterministic Activity Performance `adequate`/`attention` aggregation over evaluable scored Exercises;
 - Percurso progress based on Activity completion;
 - teacher and student use the same canonical learning content;
 - PFY Activity authoring wraps editorial/media composition and H5P Exercise editing.
@@ -151,8 +154,7 @@ Still requiring explicit resolution before applicable implementation:
 - legacy Activity composition migration strategy;
 - legacy Syllabus/Percurso migration strategy;
 - raw xAPI retention if raw statements are retained;
-- Exercise scoreability / assessment semantics (how an Exercise is determined to be scorable; must not be inferred from existing Attempts);
-- Activity Performance `adequate`/`attention` aggregation rule;
+- historical Attempt/Evaluation interpretation when an Exercise's `assessment_mode`/`scoring_policy` changes after Attempts exist (see `PRODUCT_DEFINITION.md` §12);
 - product decisions surfaced by the UX prototype, recorded in `resources/ux/PROTOTYPE-CONFLICTS.md`.
 
 ## UX reference rule
