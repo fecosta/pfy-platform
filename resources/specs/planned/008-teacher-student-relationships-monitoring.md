@@ -28,6 +28,7 @@ An active relationship established by invitation/acceptance is required for teac
 - pending/active/revoked lifecycle;
 - relationship listing;
 - linked student PFY learning history as defined by the canonical evidence layers (Exercise Attempts, Activity Progress, Activity Performance and Percurso progress; `docs/ARCHITECTURE.md` §15–16);
+- relationship-scoped authorization for the Teacher-facing manual Evaluation workflow: which Teacher may write an Evaluation for which Student's Attempt, replacing SPEC-006's fail-closed placeholder (`docs/PRODUCT_DEFINITION.md` §10a; SPEC-006 §10/§11a);
 - revoke;
 - authorization/RLS tests;
 - persistence independent of payment.
@@ -40,7 +41,7 @@ An active relationship established by invitation/acceptance is required for teac
 
 ## 6. Expected Behavior
 
-Pending exposes no history; active grants authorized history access; revoked removes access; relationship survives later entitlement suspension.
+Pending exposes no history; active grants authorized history access; revoked removes access; relationship survives later entitlement suspension. An active relationship additionally authorizes the linked Teacher to write a manual Evaluation for that Student's Attempts (replacing SPEC-006's fail-closed default); revoked removes that authorization as well.
 
 ## 7. Constraints
 - invitation tokens unguessable and expiring;

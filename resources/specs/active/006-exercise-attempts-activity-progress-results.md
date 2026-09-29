@@ -134,6 +134,33 @@ latest completed Attempt for that Exercise.
 An incomplete later Attempt does not erase the latest completed
 evidence.
 
+### Historical assessment/scoring configuration is stable
+
+An Attempt and its associated Evaluation preserve the
+`assessment_mode`/`scoring_policy` semantics applicable to that
+learner execution at the time it occurred. Later editorial changes to
+an Exercise's `assessment_mode`/`scoring_policy` must never rewrite or
+reinterpret existing Attempt/submission/Evaluation evidence.
+
+```text
+Exercise configuration
+        ↓
+Attempt created/submitted
+        ↓
+assessment/scoring semantics applicable to that Attempt
+        ↓
+Evaluation
+        ↓
+durable learning history
+```
+
+"Latest completed Attempt" still selects which Attempt is current, but
+that Attempt is interpreted using the semantics that applied to it, not
+today's Exercise configuration. A new Attempt created after a
+configuration change uses the new configuration; it does not alter the
+older Attempt. See Section 5.12a for implementation detail and Section
+14 for the required test contracts.
+
 ### Activity Progress
 
 Activity Progress is PFY-owned:
@@ -195,13 +222,31 @@ Attempt content. A manually assigned score is never labeled
 `client_reported`. An Attempt has at most one current Evaluation for
 MVP; re-review/correction workflows are not defined by this SPEC.
 
+Evaluator identity on an Evaluation must come from trusted
+authenticated/authorized server context, never an arbitrary
+client-selected identifier.
+
 Evaluator feedback tied to an Attempt is durable canonical learner
 history: the learner may later see it.
 
-Evaluation authorization (who may evaluate a given learner's submission)
-is owned by SPEC-008's Teacher-Student relationship boundary. SPEC-006
-defines only the minimal seam needed to persist Evaluation safely --
-see Section 10a.
+### Manual evaluation authorization boundary
+
+Evaluation authorization -- who may evaluate a given learner's
+submission -- is owned entirely by SPEC-008's Teacher-Student
+relationship boundary, not by SPEC-006.
+
+SPEC-006 establishes the Evaluation domain model and a protected
+persistence capability. It does **not** grant general Teacher evaluation
+permission. A user holding a Teacher role must not gain Evaluation-write
+access merely by holding that role. Possession of a learner ID, Attempt
+ID, Exercise ID or Evaluation ID is never sufficient authorization.
+
+Authorization policy is distinct from technical execution mechanism. A
+server-side privileged/service credential used internally to persist an
+Evaluation is an execution mechanism, not an authorization decision, and
+must never be treated as evidence the caller is authorized. Until
+SPEC-008 establishes relationship-scoped Teacher authorization, ordinary
+Teacher-initiated Evaluation writes must fail closed -- see Section 10.
 
 ### Activity Performance
 
@@ -381,16 +426,25 @@ For `manual`-assessment Exercises, implement:
     implementation freedom; the product semantics required are:
     completed/submitted, awaiting manual review, reviewed with score,
     reviewed without score.
--   the smallest authorization primitive necessary to let an authorized
-    evaluator write an Evaluation for a given learner's Attempt safely
-    (server-side check plus RLS), without implementing SPEC-008's
-    invitation/relationship lifecycle. Where SPEC-008 has not yet
-    established the relationship table, the evaluator-authorization
-    check is a documented seam/dependency, not a full implementation
-    (Section 10).
+-   a protected server-side Evaluation-write capability that fails
+    closed for ordinary Teacher-initiated writes until SPEC-008
+    establishes relationship-scoped Teacher authorization (Section 10).
+    This is a persistence capability, not a Teacher authorization
+    policy: SPEC-006 must not implement a temporary or implicit Teacher
+    authorization model, must not grant Evaluation-write access on the
+    basis of a Teacher role alone, and must not accept a client-supplied
+    learner/Attempt/Exercise/Evaluation ID as authorization.
 
 Evaluation must never mutate or overwrite the learner's Attempt/
 submission content.
+
+Persist, alongside each Attempt (or its Evaluation), the
+`assessment_mode`/`scoring_policy` semantics applicable to that Attempt
+at creation time (Section 4, Historical assessment/scoring
+configuration is stable). The exact representation -- snapshot columns,
+a configuration-version reference, or another immutable mechanism -- is
+implementation freedom provided the historical semantics remain
+deterministic and auditable.
 
 ### 5.7 Score provenance
 
@@ -432,6 +486,13 @@ Current Exercise evidence uses the latest completed Attempt for
 (if any) comes from the current Evaluation of the latest completed
 Attempt; the Attempt is still "current" once submitted, independent of
 whether it has been evaluated.
+
+Each Attempt is interpreted using its own captured assessment/scoring
+semantics (Section 4, Section 5.6a), not the Exercise's present-day
+configuration. If the Exercise's configuration changed after an
+Attempt was created, that Attempt's historical semantics remain
+unchanged; only a newer Attempt created after the change uses the new
+configuration.
 
 Examples:
 
@@ -526,21 +587,54 @@ proportion == 0%             -> adequate
 Do not use average/highest/lowest score, Exercise count or prototype
 mock data. Do not introduce a 70% threshold.
 
-### 5.12a Historical assessment/scoring configuration changes
+### 5.12a Historical assessment/scoring configuration is stable
 
 Attempts and Evaluations remain historical evidence. Changing an
-Exercise's `assessment_mode`/`scoring_policy` must never rewrite prior
-Attempt/submission/Evaluation records. Current Activity Performance is a
-live view computed from the Exercise's **current** configuration applied
-to current valid score evidence -- it is not a replay of historical
-configuration.
+Exercise's `assessment_mode`/`scoring_policy` must never rewrite or
+reinterpret prior Attempt/submission/Evaluation records.
 
-If implementation evidence surfaces a configuration-change scenario this
-SPEC does not resolve (e.g. reclassifying already-scored historical
-evidence under a newly `scoring_policy = none` Exercise), return
-`DECISION REQUIRED — HISTORICAL ASSESSMENT CONFIGURATION SEMANTICS`
-rather than inventing a resolution. This must not block the rest of
-SPEC-006's implementation.
+Implementation must preserve, per Attempt, the `assessment_mode`/
+`scoring_policy` semantics applicable to that Attempt at creation time
+(conceptually `assessment_mode_at_attempt`/`scoring_policy_at_attempt`,
+or an equivalent immutable snapshot/version reference -- exact storage
+strategy is implementation freedom per Section 5.6a). This is **not**
+a general content-versioning system; it is a minimal, auditable capture
+sufficient to interpret each Attempt deterministically.
+
+Current Exercise performance evidence still uses the learner's latest
+completed Attempt (Section 5.9). That Attempt is read using its own
+captured semantics, never by retroactively applying the Exercise's
+present-day configuration. A learner's new Attempt created after a
+configuration change uses the new configuration; it does not alter or
+reinterpret the earlier Attempt.
+
+Example:
+
+``` text
+Attempt 1: scoring_policy_at_attempt = required, score = 30%
+
+Exercise later edited: scoring_policy = none
+
+Attempt 1 remains historically scored evidence (required, 30%).
+It is not reclassified, hidden or excluded because of the later edit.
+
+Attempt 2 (created after the edit):
+scoring_policy_at_attempt = none, score = null
+
+Current Exercise evidence = Attempt 2 (latest completed Attempt),
+using its own (none) semantics -- Attempt 1 is not mutated.
+```
+
+Editorial changes to `assessment_mode`, `scoring_policy`, H5P
+configuration or other Exercise implementation details must not mutate
+existing Attempts, submissions, Evaluations, score provenance or
+historical assessment semantics. Authors may continue editing Exercises
+under the applicable authoring contract; only the historical meaning of
+already-produced learner evidence is protected.
+
+This rule is fully determined by Section 4 (Historical assessment/
+scoring configuration is stable) and `docs/PRODUCT_DEFINITION.md` §12.
+It is no longer an open decision gate.
 
 ### 5.13 Learner feedback contract
 
@@ -690,7 +784,27 @@ semantics.
 
 Current Exercise performance uses the latest completed Attempt
 (`automatic`) or the current Evaluation of the latest completed Attempt
-(`manual`).
+(`manual`). Each Attempt is interpreted using its own captured
+assessment/scoring semantics, never today's Exercise configuration
+(Historical stability invariant, below).
+
+### Historical stability invariant
+
+An Attempt and its Evaluation preserve the `assessment_mode`/
+`scoring_policy` semantics applicable at that Attempt's creation. A
+later editorial change to an Exercise's `assessment_mode`/
+`scoring_policy` must never rewrite, mutate or reinterpret existing
+Attempt/submission/Evaluation evidence; it governs only new Attempts
+created after the change (Section 4, Section 5.12a).
+
+### Evaluation authorization invariant
+
+Evaluation-write access must fail closed for ordinary Teacher-initiated
+requests until SPEC-008 establishes relationship-scoped Teacher
+authorization. A Teacher role alone, or possession of a learner/
+Attempt/Exercise/Evaluation ID, never constitutes authorization. A
+privileged/service execution credential is a technical mechanism, never
+an authorization decision (Section 10, Section 11a).
 
 ### Activity completion invariant
 
@@ -780,33 +894,77 @@ At minimum:
 -   direct database access is protected by applicable RLS/server
     authorization conventions.
 
-For manual Evaluation (minimal seam only -- full lifecycle is SPEC-008):
+### Manual Evaluation boundary
+
+SPEC-006 establishes the Evaluation domain model, secure Evaluation
+persistence, and learner access to their own Evaluation evidence. It
+does **not** establish Teacher evaluation authorization -- that
+authorization policy is owned entirely by SPEC-008 (Section 11a).
+
+Conceptually:
+
+``` text
+Teacher UI
+   ↓
+SPEC-008 authorization
+   ↓
+authorized Evaluation command
+   ↓
+SPEC-006 Evaluation persistence
+```
+
+SPEC-006 owns only the bottom layer.
+
+Learner access:
 
 -   the learner owns their submission/Attempt content and cannot alter
     an Evaluation of it;
 -   one learner must not read another learner's submission or
     Evaluation;
+-   a learner cannot impersonate an evaluator or choose evaluator
+    identity through client-supplied identifiers;
 -   evaluator identity is not exposed beyond what the product contract
-    permits;
--   writing an Evaluation requires an explicit authorization check tied
-    to the evaluator's relationship to the learner. Until SPEC-008
-    exists, this SPEC must implement the smallest server-side/RLS
-    primitive sufficient to prevent an arbitrary authenticated user from
-    writing an Evaluation for an arbitrary learner's Attempt (e.g.
-    restricting Evaluation writes to a privileged/service-role context
-    invoked by a bounded internal action), and must document the
-    dependency on SPEC-008 replacing that primitive with real
-    relationship-scoped authorization;
--   service-role shortcuts must not become the general authorization
-    model -- they are acceptable only as the documented minimal seam
-    above.
+    permits.
+
+Evaluation-write authorization (fail-closed until SPEC-008):
+
+-   SPEC-006 must implement a protected server-side Evaluation-write
+    capability, but must **fail closed** for ordinary Teacher-initiated
+    access until SPEC-008 establishes relationship-scoped Teacher
+    authorization;
+-   a generic Teacher role must not, by itself, grant Evaluation-write
+    access;
+-   arbitrary Attempt IDs, Exercise IDs, Evaluation IDs or learner IDs
+    supplied by the client must not grant Evaluation-write access;
+-   arbitrary/client-supplied evaluator identifiers must be
+    rejected -- evaluator identity must come from trusted
+    authenticated/authorized server context only;
+-   SPEC-006 must **not** implement a temporary or implicit Teacher
+    authorization model as a stand-in for SPEC-008;
+-   authorization policy is distinct from technical execution
+    mechanism. Any server-side privileged/service credential the
+    implementation later uses to execute Evaluation persistence is an
+    execution mechanism, not an authorization decision: authorization
+    must be established (by an authorized caller, ultimately via
+    SPEC-008) before privileged persistence is invoked; the mere
+    availability of a privileged/service credential must never be
+    treated as evidence that the caller is authorized; and client code
+    must never receive privileged credentials. The implementation agent
+    may choose the persistence mechanism but may not redefine who is
+    authorized;
+-   privileged server-side persistence must not be reachable through an
+    unauthorized client path.
+
+Content handling:
+
 -   free-text learner submission content and evaluator feedback require
     sanitization/size bounds consistent with the platform's existing
     user-generated-content handling to avoid stored-XSS and unbounded
     storage; do not render either as trusted HTML without sanitization.
 
-Teacher access lifecycle (invitation, acceptance, revocation, listing)
-is not introduced here.
+Teacher access lifecycle (invitation, acceptance, revocation, listing,
+relationship-scoped Evaluation-write authorization) is not introduced
+here -- it is SPEC-008.
 
 Institutional access is not introduced here.
 
@@ -837,11 +995,12 @@ This addresses the open questions from the prior gate:
 -   **content types whose scoring depends on configuration:** the PFY
     Exercise configuration is authoritative regardless of the
     implementation technology's own configurability;
--   **scoreability changing after Attempts exist:** history is
-    preserved (Section 5.12a); current Activity Performance uses current
-    configuration; an unresolved historical-interpretation scenario
-    returns `DECISION REQUIRED — HISTORICAL ASSESSMENT CONFIGURATION
-    SEMANTICS` rather than inventing behavior.
+-   **scoreability changing after Attempts exist:** historical
+    assessment/scoring configuration is stable (Section 4, Section
+    5.12a) -- each Attempt preserves the semantics applicable to it at
+    creation; a later Exercise edit never rewrites or reinterprets
+    existing Attempt/Evaluation evidence, and only governs new Attempts
+    created after the change.
 
 This affects SPEC-004 (Exercise model gains `assessment_mode`/
 `scoring_policy`) -- see Section 13.
@@ -874,6 +1033,57 @@ UXC-12 and UXC-13 have been updated to reflect this resolution.
 
 Both decisions are resolved and reconciled into authoritative
 documentation. This gate no longer blocks activation.
+
+## 11a. Evaluation Authorization Decision Record (resolved)
+
+An earlier draft of this SPEC left the Evaluation-write mechanism as
+implementation freedom, including an example of restricting writes "to
+a privileged/service-role context invoked by a bounded internal
+action". That confused authorization policy with technical execution
+mechanism and left too much security behavior undefined. This is
+corrected as follows.
+
+**SPEC-006 authorizes:** the Evaluation domain model; secure Evaluation
+persistence capability; learner read access to their own Attempts,
+submissions and Evaluations; the server-side boundaries a future
+authorized evaluation command will invoke.
+
+**SPEC-006 does not authorize:** general Teacher evaluation permission.
+A user holding a Teacher role gains no Evaluation-write access from
+that role alone. Possession of a learner ID, Attempt ID, Exercise ID or
+Evaluation ID is never sufficient authorization. SPEC-006 must not
+implement a temporary Teacher authorization model, and must not grant
+any Teacher access to all learner submissions.
+
+**Why service-role/privileged execution is not authorization:** a
+server-side privileged credential is how a write is technically
+executed once authorized, not evidence that the caller is authorized to
+request it. Using its mere availability as an authorization signal
+would let any code path that can reach the privileged mechanism write
+an Evaluation for an arbitrary learner -- exactly the outcome this
+correction prevents.
+
+**What SPEC-008 owns:** Teacher-Student relationships; invitation/
+acceptance/revocation; which Teacher may access which Student; which
+Teacher may evaluate which Student (relationship-scoped authorization);
+Teacher monitoring and the Teacher-facing evaluation workflow.
+
+The intended shape is:
+
+``` text
+Teacher UI
+   ↓
+SPEC-008 authorization
+   ↓
+authorized Evaluation command
+   ↓
+SPEC-006 Evaluation persistence
+```
+
+SPEC-006 owns only the bottom layer. Until SPEC-008 exists, SPEC-006
+must fail closed for ordinary Teacher-initiated Evaluation writes --
+see Section 10 for the resulting authorization contract and Section 14
+for the required negative-authorization test contracts.
 
 ## 12. Expected Behavior
 
@@ -921,18 +1131,20 @@ After implementation:
 
 -   PostgreSQL learning-evidence schema/migrations, including a new
     `exercises.assessment_mode`/`scoring_policy` configuration (additive
-    migration on the SPEC-004 `exercises` table -- see Section 13a);
+    migration on the SPEC-004 `exercises` table) and a per-Attempt
+    historical-configuration capture mechanism -- see Section 13a;
 -   Exercise Attempt domain/application layer;
 -   manual submission storage (Attempt content/body) and Evaluation
     domain/application layer;
 -   H5P tracking adapter/event ingestion;
 -   Attempt token/context mechanism;
 -   Activity Progress derivation/persistence;
--   Activity Performance derivation/persistence;
+-   Activity Performance derivation/persistence, interpreting each
+    Attempt/Evaluation under its own captured historical semantics;
 -   learner history APIs/read models, including Evaluation retrieval;
 -   learner result/completion UI required by this SPEC;
--   RLS/server authorization, including the minimal Evaluation-write
-    authorization seam;
+-   RLS/server authorization, including the protected Evaluation-write
+    capability that fails closed pending SPEC-008;
 -   tests;
 -   documentation.
 
@@ -943,8 +1155,9 @@ After implementation:
 -   H5P content/runtime mapping;
 -   Activity authoring;
 -   teacher-student relationship lifecycle (invitation/acceptance/
-    revocation) -- SPEC-006 implements only the minimal Evaluation-write
-    authorization seam, not the relationship model;
+    revocation) and Teacher evaluation authorization policy -- owned
+    entirely by SPEC-008; SPEC-006 implements only the fail-closed
+    persistence capability described in Section 10/11a;
 -   teacher monitoring UI/workflow;
 -   institutional reporting;
 -   licensing/billing;
@@ -952,15 +1165,22 @@ After implementation:
 
 ### 13a. Exercise model schema impact (SPEC-004 surface)
 
-This SPEC requires an additive migration adding `assessment_mode` and
-`scoring_policy` columns/constraints to the existing SPEC-004
-`exercises` table (`supabase/migrations/
-20260924000000_learning_content_foundation.sql`). `implementation_metadata`
-remains a free-form jsonb placeholder today with no defined fields; this
-SPEC does not require reusing it -- typed columns are preferred for an
-invariant this important. No existing data needs backfill beyond a safe
-default (implementation freedom), since no Exercises or Attempts exist
-in production yet.
+This SPEC requires:
+
+-   an additive migration adding `assessment_mode` and `scoring_policy`
+    columns/constraints to the existing SPEC-004 `exercises` table
+    (`supabase/migrations/20260924000000_learning_content_foundation.sql`).
+    `implementation_metadata` remains a free-form jsonb placeholder
+    today with no defined fields; this SPEC does not require reusing
+    it -- typed columns are preferred for an invariant this important;
+-   a per-Attempt (or per-Evaluation) capture of the `assessment_mode`/
+    `scoring_policy` semantics applicable at Attempt creation (Section
+    4, Section 5.12a) -- e.g. snapshot columns or a configuration
+    reference, implementation freedom bounded by the requirement that
+    historical interpretation remain deterministic and auditable.
+
+No existing data needs backfill beyond a safe default (implementation
+freedom), since no Exercises or Attempts exist in production yet.
 
 ### Downstream dependencies
 
@@ -1062,10 +1282,34 @@ SPEC-006 establishes canonical learning evidence consumed by:
     excluded from the Activity Performance denominator.
 -   [ ] `scoring_policy = required` Exercise without current valid score
     is excluded from the denominator (not scored zero).
--   [ ] Evaluation write requires the minimal authorization seam
-    (Section 10); an arbitrary authenticated user cannot write an
-    Evaluation for an arbitrary learner's Attempt.
 -   [ ] Free-text submission/feedback content is sanitized/size-bounded.
+
+### Historical assessment configuration
+
+-   [ ] An Attempt created under a given `assessment_mode`/
+    `scoring_policy` retains that Attempt's applicable semantics after
+    the Exercise's configuration is later changed.
+-   [ ] Historical Attempt/Evaluation evidence is not mutated, rewritten
+    or reinterpreted by a later Exercise configuration edit.
+-   [ ] A new Attempt created after a configuration change uses the new
+    configuration's semantics.
+-   [ ] "Latest completed Attempt" selection remains deterministic
+    across a configuration change, and the selected Attempt is
+    interpreted using its own captured semantics.
+
+### Evaluation authorization
+
+-   [ ] Learner A cannot read learner B's Evaluation.
+-   [ ] Learner A cannot modify their own Evaluation.
+-   [ ] A generic Teacher role alone does not grant Evaluation-write
+    access.
+-   [ ] Supplying an arbitrary Attempt ID does not grant Evaluation-write
+    access.
+-   [ ] An arbitrary/client-supplied evaluator ID is rejected or
+    ignored -- evaluator identity comes only from trusted server
+    context.
+-   [ ] Privileged/service-role server persistence cannot be invoked
+    through an unauthorized client path.
 
 ### Learner history
 
@@ -1092,8 +1336,25 @@ SPEC-006 establishes canonical learning evidence consumed by:
 -   [ ] Tests cover Activity Performance resolving to each of
     `no_score`/`adequate`/`attention`/`needs_review` for a mixed
     automatic+manual Activity.
--   [ ] Negative authorization tests cover Evaluation write/read
-    boundaries (Section 10).
+-   [ ] Historical configuration test: create an Attempt while
+    `scoring_policy = required`; complete it with a score; change the
+    Exercise to `scoring_policy = none`; verify the historical Attempt
+    retains its original assessment/scoring meaning; create a new
+    Attempt after the change and verify it uses the new semantics;
+    verify the old Attempt was not mutated.
+-   [ ] Current-evidence test: Attempt 1 (`required`, score 30%), then
+    Exercise changes to `none`, then Attempt 2 completes under `none`;
+    verify latest-completed-Attempt selection is deterministic and
+    Attempt 1 remains intact and unmutated.
+-   [ ] Negative authorization tests cover: learner A cannot read
+    learner B's Evaluation; learner A cannot modify their own
+    Evaluation; a generic Teacher role alone does not grant
+    Evaluation-write access; an arbitrary Attempt ID does not grant
+    Evaluation-write access; an arbitrary evaluator ID is rejected;
+    privileged server persistence is not reachable through an
+    unauthorized client path (Section 10, Section 11a). SPEC-008's
+    positive Teacher relationship-scoped authorization tests are out of
+    scope here.
 -   [ ] Type-check/lint/build checks pass.
 -   [ ] No authoritative product/architecture contract was silently
     changed.
@@ -1112,7 +1373,15 @@ Implementation may choose reversible technical details including:
 -   transaction/locking strategy;
 -   indexes;
 -   learner-history route/read-model structure;
--   short-lived technical event buffering.
+-   short-lived technical event buffering;
+-   the exact mechanism/representation for capturing per-Attempt
+    historical `assessment_mode`/`scoring_policy` semantics (snapshot
+    columns, a configuration-version reference, or another immutable
+    representation), provided historical interpretation remains
+    deterministic and auditable;
+-   the technical mechanism used to execute protected Evaluation
+    persistence, provided it does not redefine who is authorized
+    (Section 10, Section 11a).
 
 Implementation freedom does not include changing:
 
@@ -1129,7 +1398,15 @@ Implementation freedom does not include changing:
 -   the completion/review/score separation (Section 4, Manual
     Evaluation);
 -   Evaluation as a record distinct from Attempt/submission content;
--   authorization boundaries.
+-   historical assessment/scoring configuration stability (Section 4,
+    Section 5.12a) -- an Exercise configuration edit must never rewrite
+    or reinterpret existing Attempt/Evaluation evidence;
+-   the Evaluation authorization boundary (Section 10, Section 11a) --
+    SPEC-006 must not grant Teacher evaluation permission from a
+    Teacher role alone, must not accept client-supplied IDs as
+    authorization, and must not treat a privileged/service execution
+    credential as an authorization decision;
+-   authorization boundaries generally.
 
 If implementation evidence requires changing one of these contracts,
 return:
@@ -1171,11 +1448,13 @@ Not currently defined.
 Not currently defined outside explicit denominators such as Percurso
 completed Activities / total Activities.
 
-### Teacher-Student relationship lifecycle
+### Teacher-Student relationship lifecycle and Teacher evaluation authorization
 
-Invitation, acceptance, revocation and relationship listing remain
-SPEC-008. SPEC-006 implements only the minimal Evaluation-write
-authorization seam described in Section 10.
+Invitation, acceptance, revocation, relationship listing and Teacher
+evaluation authorization (which Teacher may evaluate which Student)
+remain SPEC-008 in full. SPEC-006 implements only the fail-closed
+Evaluation persistence capability described in Section 10/11a -- it does
+not implement any temporary Teacher authorization model.
 
 ### Re-review / Evaluation correction workflow
 
@@ -1193,23 +1472,33 @@ At completion:
     evaluator-origin provenance value used for manual scores;
 6.  document Activity Progress derivation/persistence;
 7.  document the implemented Activity Performance aggregation;
-8.  document the minimal Evaluation-write authorization seam and its
-    replacement dependency on SPEC-008;
-9.  update `docs/ARCHITECTURE.md` only if verified implementation
+8.  document the per-Attempt historical-configuration capture mechanism
+    actually implemented (Section 5.12a);
+9.  document the fail-closed Evaluation-write persistence capability and
+    its explicit dependency on SPEC-008 for Teacher authorization;
+10. update `docs/ARCHITECTURE.md` only if verified implementation
     establishes a durable architecture clarification;
-10. update `resources/specs/README.md`;
-11. reconcile SPEC-008, SPEC-011 and SPEC-015 against the implemented
+11. update `resources/specs/README.md`;
+12. reconcile SPEC-008, SPEC-011 and SPEC-015 against the implemented
     canonical evidence model;
-12. move this SPEC to `completed/` only after implementation, validation
+13. move this SPEC to `completed/` only after implementation, validation
     and durable knowledge reconciliation.
 
 ## 18. Open Questions / Blockers
 
 ### Blocking before activation
 
-None. Both prior gates (`ACTIVITY PERFORMANCE ADEQUATE/ATTENTION
-AGGREGATION` and `EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS`) are
-resolved -- see Section 11.
+None. All four prior gates are resolved:
+
+-   `ACTIVITY PERFORMANCE ADEQUATE/ATTENTION AGGREGATION` -- Section 11;
+-   `EXERCISE SCOREABILITY / ASSESSMENT SEMANTICS` -- Section 11;
+-   historical assessment/scoring configuration semantics -- resolved as
+    "historical configuration is stable" (Section 4, Section 5.12a); no
+    longer an open interpretation question;
+-   Evaluation authorization -- resolved as a fail-closed SPEC-006
+    persistence capability with authorization policy owned entirely by
+    SPEC-008 (Section 10, Section 11a); no temporary authorization model
+    is defined or permitted.
 
 ### Non-blocking
 
@@ -1224,18 +1513,12 @@ The UX prototype shows a learner's "current Percurso"
 must not be implemented from the prototype. Percurso progress itself
 remains derived from Activity completion.
 
-`HISTORICAL ASSESSMENT CONFIGURATION SEMANTICS`
+`TEACHER EVALUATION AUTHORIZATION IMPLEMENTATION (SPEC-008)`
 
-Non-blocking for activation; may surface during implementation per
-Section 5.12a if an unresolved historical-interpretation scenario is
-encountered. Return `DECISION REQUIRED — HISTORICAL ASSESSMENT
-CONFIGURATION SEMANTICS` at that point rather than inventing behavior.
-
-`EVALUATION AUTHORIZATION SEAM`
-
-Non-blocking: Section 10 defines the smallest safe primitive pending
-SPEC-008. This is a documented implementation dependency, not an
-activation blocker.
+Non-blocking for SPEC-006: the relationship-scoped authorization that
+permits a Teacher to invoke Evaluation persistence is SPEC-008's full
+responsibility, not an open decision inside SPEC-006. SPEC-006's
+fail-closed boundary (Section 10/11a) is complete as specified.
 
 ## 19. Activation Gate
 
@@ -1243,14 +1526,22 @@ This SPEC is:
 
 **ACTIVE --- IMPLEMENTATION READY**
 
-Both prior blocking decisions are resolved and reconciled into
-`docs/PRODUCT_DEFINITION.md` and `docs/ARCHITECTURE.md`:
+All blocking decisions, including the two corrections from independent
+review (historical assessment configuration; Evaluation authorization),
+are resolved and reconciled into `docs/PRODUCT_DEFINITION.md` and
+`docs/ARCHITECTURE.md`:
 
 ``` text
 SPEC-005 completed (final re-review remediation closed)
 + Activity Performance adequate/attention rule approved (Section 11)
 + Exercise scoreability/assessment semantics approved (Section 11)
 + manual Evaluation semantics explicit (Section 4, 5.6a, 5.12a)
++ historical assessment/scoring configuration is stable, not a
+  current-config live view (Section 4, Section 5.12a)
++ Evaluation authorization is explicit: SPEC-006 owns a fail-closed
+  persistence capability only; SPEC-008 owns all Teacher authorization
+  policy; service-role/privileged execution is never authorization
+  (Section 10, Section 11a)
 + authoritative documentation updated
 + repository state revalidated
 + no remaining blocking contradiction
@@ -1270,10 +1561,11 @@ append-only Exercise Attempts
 + scoring/non-scoring semantics
 + manual Evaluation semantics (submission, review, optional score)
 + latest completed Attempt / current Evaluation semantics
++ historical assessment/scoring configuration preserved per Attempt
 + Activity Progress
 + complete approved Activity Performance
 + learner own-history including Evaluation retrieval
-+ authorization/RLS verification, including Evaluation seam
++ fail-closed Evaluation-write authorization verified (no Teacher-role-only access)
 + browser validation
 + documentation reconciliation
 = completed

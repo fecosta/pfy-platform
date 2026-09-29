@@ -495,7 +495,15 @@ An Attempt may have zero or one current Evaluation. A later Evaluation replacing
 
 Evaluator feedback tied to a learner's Attempt is part of the learner's durable canonical learning history: the learner may later see it, it is scoped to the specific Attempt/submission, and it is not raw H5P/runtime state.
 
-Manual evaluation authorization (who may evaluate which learner's submission) is owned by the Teacher-Student relationship boundary (SPEC-008), not by SPEC-006.
+Evaluator identity on an Evaluation must come from a trusted authenticated/authorized server context. It must never be accepted as an arbitrary client-selected identity.
+
+### Manual evaluation authorization boundary
+
+Manual evaluation authorization — who may evaluate which learner's submission — is owned entirely by the Teacher-Student relationship boundary (SPEC-008), not by SPEC-006.
+
+SPEC-006 establishes the Evaluation domain model and a protected persistence capability. It does not grant general Teacher evaluation permission. A user holding a Teacher role must not gain Evaluation-write access merely because they hold that role: possession of a Teacher role, a learner ID, an Attempt ID, an Exercise ID or an Evaluation ID is never sufficient authorization on its own.
+
+Authorization policy is distinct from technical execution mechanism. A server-side privileged/service credential used internally to persist an Evaluation is an execution mechanism, not an authorization decision; it must never be treated as evidence that the caller is authorized. Until SPEC-008 establishes relationship-scoped Teacher authorization, SPEC-006 must fail closed for ordinary Teacher-initiated Evaluation writes — no temporary or implicit Teacher authorization model may be implemented in its place.
 
 ## 11. Activity progress
 
@@ -587,9 +595,27 @@ Do not use average score, highest score, lowest score, Exercise count, or protot
 - does not change learner level;
 - does not imply CEFR mastery or lack of mastery.
 
-### Historical assessment/scoring configuration changes
+### Historical assessment/scoring configuration is stable
 
-Attempts remain historical evidence; changing an Exercise's `assessment_mode`/`scoring_policy` must never rewrite prior Attempt/submission/Evaluation evidence. Current Activity Performance derives from the Exercise's **current** configuration applied to current valid score evidence — it is a live view, not a replay of historical configuration. If a change in configuration after Attempts exist creates an interpretation this document does not resolve (e.g. reclassifying historical scored evidence under a newly `none`-scored Exercise), implementation must return `DECISION REQUIRED — HISTORICAL ASSESSMENT CONFIGURATION SEMANTICS` rather than invent a resolution.
+Historical assessment configuration is stable. An Attempt and its associated Evaluation preserve the `assessment_mode`/`scoring_policy` semantics applicable to that learner execution at the time it occurred. Later editorial changes to an Exercise's `assessment_mode`/`scoring_policy` must never rewrite or reinterpret the meaning of existing Attempt/submission/Evaluation evidence.
+
+```text
+Exercise configuration
+        ↓
+Attempt created/submitted
+        ↓
+assessment/scoring semantics applicable to that Attempt
+        ↓
+Evaluation
+        ↓
+durable learning history
+```
+
+PFY must preserve enough historical configuration context (e.g. a snapshot captured at Attempt creation, or an equivalent immutable representation) to interpret each Attempt correctly regardless of later Exercise edits. The exact storage strategy is implementation freedom provided historical semantics remain deterministic and auditable; this does not require a general content-versioning system.
+
+Current Activity Performance still uses the learner's **latest completed Attempt** per Exercise (§10), but that Attempt is interpreted using the assessment/scoring semantics that applied to it, not by retroactively applying today's Exercise configuration. If the learner creates a new Attempt after the Exercise configuration changed, that new Attempt uses the new configuration; the current-evidence rule naturally surfaces it once it becomes the latest completed Attempt, without mutating the earlier one.
+
+Editorial changes to `assessment_mode`, `scoring_policy`, H5P configuration or other Exercise implementation details must not mutate existing Attempts, submissions, Evaluations, score provenance or historical assessment semantics. Authors may continue editing Exercises under the applicable authoring contract; only the historical meaning of already-produced learner evidence is protected.
 
 The thresholds previously shown in the UX prototype (`resources/ux/PROTOTYPE-CONFLICTS.md`, UXC-13, a 70%/50% per-Exercise band) are **not** approved and are superseded by the Activity-level rule above; the prototype proposal remains recorded only as historical input, not as authoritative behavior.
 

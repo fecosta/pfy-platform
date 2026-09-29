@@ -246,7 +246,9 @@ The server creates the Attempt and issues an unguessable Attempt token/context.
 
 ### Manual Evaluation
 
-For `manual`-assessment Exercises, a distinct Evaluation record represents human-reviewer output (evaluator identity, feedback, optional score, timestamp). Evaluation is never merged into the learner's Attempt/submission content (`PRODUCT_DEFINITION.md` §10a). Evaluation authorization (who may evaluate a given learner's submission) is owned by the Teacher-Student relationship boundary (SPEC-008); SPEC-006 defines only the minimal seam needed to persist Evaluation safely.
+For `manual`-assessment Exercises, a distinct Evaluation record represents human-reviewer output (evaluator identity, feedback, optional score, timestamp). Evaluation is never merged into the learner's Attempt/submission content (`PRODUCT_DEFINITION.md` §10a). Evaluator identity must come from trusted authenticated server context, never an arbitrary client-selected identifier.
+
+Evaluation authorization (who may evaluate a given learner's submission) is owned entirely by the Teacher-Student relationship boundary (SPEC-008); SPEC-006 defines only the Evaluation domain model and a protected persistence capability, and does not grant general Teacher evaluation permission. Authorization policy is distinct from execution mechanism: a server-side privileged/service credential used to persist an Evaluation is a technical mechanism, not proof of authorization, and must never substitute for it. Until SPEC-008 establishes relationship-scoped authorization, ordinary Teacher-initiated Evaluation writes must fail closed (`PRODUCT_DEFINITION.md` §10a).
 
 ## 11. H5P tracking
 
@@ -310,7 +312,7 @@ attention
 needs_review
 ```
 
-Current Exercise evidence uses the latest completed Attempt for `automatic` Exercises, or the current Evaluation for `manual` Exercises (`PRODUCT_DEFINITION.md` §10a).
+Current Exercise evidence uses the latest completed Attempt for `automatic` Exercises, or the current Evaluation for `manual` Exercises (`PRODUCT_DEFINITION.md` §10a). Each Attempt/Evaluation is interpreted using the `assessment_mode`/`scoring_policy` semantics applicable at that Attempt's creation, not today's Exercise configuration (`PRODUCT_DEFINITION.md` §12, Historical assessment/scoring configuration is stable). A later editorial change to Exercise configuration never rewrites or reinterprets existing Attempt/Evaluation evidence; it only governs new Attempts created after the change.
 
 An Exercise enters the Activity Performance denominator (an "evaluable scored Exercise") only when its `scoring_policy` is `required` or `optional` AND it currently has valid score evidence. `scoring_policy = none`, and `optional`/`required` Exercises without current valid score, are excluded from the denominator without being treated as zero (`PRODUCT_DEFINITION.md` §12).
 

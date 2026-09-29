@@ -122,10 +122,14 @@ Verify:
 - **SPEC-006 — Exercise Attempts, Activity Progress & Results**
   - `active/006-exercise-attempts-activity-progress-results.md`
   - Implements canonical Exercise Attempts, Activity Progress, Activity Performance and manual
-    Evaluation evidence. State: ACTIVE — IMPLEMENTATION READY. Both prior activation blockers
-    (Exercise scoreability / assessment semantics; Activity Performance `adequate`/`attention`
-    aggregation) are resolved and reconciled into `docs/PRODUCT_DEFINITION.md` and
-    `docs/ARCHITECTURE.md`.
+    Evaluation evidence. State: ACTIVE — IMPLEMENTATION READY. All activation blockers are
+    resolved and reconciled into `docs/PRODUCT_DEFINITION.md` and `docs/ARCHITECTURE.md`:
+    Exercise scoreability / assessment semantics; Activity Performance `adequate`/`attention`
+    aggregation; historical assessment/scoring configuration stability (an Exercise edit never
+    rewrites or reinterprets existing Attempt/Evaluation evidence); and the Evaluation
+    authorization boundary (SPEC-006 owns a fail-closed persistence capability only — Teacher
+    evaluation authorization is owned entirely by SPEC-008; a privileged/service execution
+    credential is never treated as authorization).
 
 ### Planned roadmap
 
@@ -156,7 +160,7 @@ Several planned learning-domain SPECs were drafted before the composed Activity 
 |---|---|
 | SPEC-004 | Reconciled with ADR-002 in its planned file; open decisions listed in its §17 (including Exercise scoreability) must be re-checked at activation. |
 | SPEC-005 | Completed after final independent re-review remediation (see §22b); reconciled with ADR-002; production legal gate remains open. |
-| SPEC-006 | Reconciled with ADR-002; both prior `DECISION REQUIRED` items (Activity Performance `adequate`/`attention` aggregation; Exercise scoreability / assessment semantics) are resolved. ACTIVE — IMPLEMENTATION READY (`active/006-exercise-attempts-activity-progress-results.md`). |
+| SPEC-006 | Reconciled with ADR-002. All `DECISION REQUIRED` items are resolved: Activity Performance `adequate`/`attention` aggregation; Exercise scoreability / assessment semantics; historical assessment/scoring configuration stability (corrected from an earlier unapproved "current-config live view" rule); Evaluation authorization boundary (corrected to a fail-closed SPEC-006 capability with all Teacher authorization owned by SPEC-008). ACTIVE — IMPLEMENTATION READY (`active/006-exercise-attempts-activity-progress-results.md`). |
 | SPEC-007 | Stale one-Activity-to-one-H5P wording corrected; full reconciliation still required. |
 | SPEC-008 | Learning-history wording aligned with canonical evidence layers; full reconciliation still required. |
 | SPEC-014 | Stale H5P-to-Activity mapping corrected to H5P-to-Exercise; full reconciliation still required; Activity-composition and Syllabus/Percurso migration remain `DECISION REQUIRED`. |
@@ -241,7 +245,6 @@ The roadmap contains known unresolved gates, including:
 
 - GPL production implications for Lumi;
 - raw xAPI retention if retained;
-- historical Attempt/Evaluation interpretation when an Exercise's assessment/scoring configuration changes after Attempts exist (SPEC-006 §5.12a);
 - authoring review/approval workflow and editing of published content with existing Attempts;
 - Activity-authoring usability validation;
 - B2C downgrade allocation policy;
