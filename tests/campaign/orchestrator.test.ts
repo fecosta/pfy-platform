@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -8,11 +8,20 @@ import {
   selectReviewModel,
 } from "../../scripts/campaign/config";
 import { parseAgentResult, isAcceptableForClosure } from "../../scripts/campaign/result-protocol";
-import { startCampaign, runCampaignStep } from "../../scripts/campaign/orchestrator";
+import {
+  startCampaign,
+  runCampaignStep,
+  getExpectedHead,
+} from "../../scripts/campaign/orchestrator";
 import type { CampaignConfig, GitState, ReviewResult } from "../../scripts/campaign/types";
 import type { GitAdapter } from "../../scripts/campaign/git";
 import type { OpenCodeAdapter, OpenCodeRunResult } from "../../scripts/campaign/opencode";
-import { createInitialState, saveCampaignState } from "../../scripts/campaign/state";
+import {
+  createInitialState,
+  saveCampaignState,
+  getCampaignDirectory,
+  writeReport,
+} from "../../scripts/campaign/state";
 
 describe("campaign orchestrator", () => {
   let tempRoot: string;
@@ -97,6 +106,31 @@ describe("campaign orchestrator", () => {
     };
   }
 
+  /**
+   * A GitAdapter whose reported state can change mid-test, so it can simulate
+   * "clean at campaign start, then diverged after a timed-out OpenCode call".
+   */
+  function makeMutableGitAdapter(initial: GitState): {
+    adapter: GitAdapter;
+    setState: (next: GitState) => void;
+  } {
+    let current = initial;
+    return {
+      adapter: {
+        getGitState: async () => current,
+        verifyHead: async (expected: string) => {
+          if (current.head !== expected) {
+            throw new Error(`HEAD mismatch: ${current.head} !== ${expected}`);
+          }
+        },
+        isAncestor: async () => true,
+      },
+      setState: (next: GitState) => {
+        current = next;
+      },
+    };
+  }
+
   function makeOpenCodeAdapter(responses: Record<string, OpenCodeRunResult>): OpenCodeAdapter {
     return {
       async run(_model: string, prompt: string) {
@@ -110,6 +144,24 @@ describe("campaign orchestrator", () => {
           model: _model,
           startedAt: new Date(),
           endedAt: new Date(),
+        };
+      },
+    };
+  }
+
+  /** OpenCode adapter stub whose run() always resolves as a timed-out execution. */
+  function makeTimeoutOpenCodeAdapter(overrides: Partial<OpenCodeRunResult> = {}): OpenCodeAdapter {
+    return {
+      async run(model: string) {
+        return {
+          stdout: overrides.stdout ?? "",
+          stderr: overrides.stderr ?? "",
+          exitCode: overrides.exitCode ?? -1,
+          model,
+          startedAt: overrides.startedAt ?? new Date(),
+          endedAt: overrides.endedAt ?? new Date(),
+          timedOut: true,
+          terminationSignal: overrides.terminationSignal ?? "SIGKILL",
         };
       },
     };
@@ -741,5 +793,293 @@ describe("campaign orchestrator", () => {
       summary: "",
     };
     expect(isAcceptableForClosure(review as ReviewResult)).toBe(false);
+  });
+
+  describe("OpenCode timeout handling", () => {
+    test("implementation timeout with unchanged HEAD and clean tree stops safely", async () => {
+      writeSpec("SPEC-006", "active");
+      const config = makeConfig();
+      // Git never advances: this is the timeout-with-no-evidence case (Case A).
+      const git = makeGitAdapter(makeGitState({ head: "abc123", isClean: true }));
+      const opencode = makeTimeoutOpenCodeAdapter({
+        stdout: "partial stdout before timeout",
+        stderr: "partial stderr before timeout",
+      });
+
+      const state = await startCampaign(
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+
+      let report = await runCampaignStep(
+        state,
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+      expect(report.state.phase).toBe("implementing");
+
+      report = await runCampaignStep(
+        report.state,
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+
+      // Campaign must not remain stuck in "implementing".
+      expect(report.state.phase).toBe("human_review_required");
+      expect(report.state.phase).not.toBe("implementing");
+      expect(report.stopped).toBe(true);
+      expect(report.state.blockers.at(-1)?.type).toBe("OPENCODE TIMEOUT");
+      expect(report.state.blockers.at(-1)?.reason).toContain("no repository change");
+      expect(report.reason).toContain("OPENCODE TIMEOUT");
+      expect(report.reason).toContain("Implementation agent exceeded");
+
+      // Execution report must exist and preserve partial stdout/stderr,
+      // even though no valid PFY_CAMPAIGN_RESULT JSON was produced.
+      const dir = getCampaignDirectory(config, report.state.campaignId);
+      expect(existsSync(join(dir, "implementation-execution.md"))).toBe(true);
+      const executionReport = readFileSync(join(dir, "implementation-execution.md"), "utf-8");
+      expect(executionReport).toContain("partial stdout before timeout");
+      expect(executionReport).toContain("partial stderr before timeout");
+
+      // No valid implementation report should be fabricated from a timed-out run.
+      expect(existsSync(join(dir, "implementation-report.md"))).toBe(false);
+
+      // A blocker report must exist as a durable artifact.
+      expect(existsSync(join(dir, "blocker-report.md"))).toBe(true);
+      const blockerReport = readFileSync(join(dir, "blocker-report.md"), "utf-8");
+      expect(blockerReport).toContain("OPENCODE TIMEOUT");
+    });
+
+    test("implementation timeout with modified working tree is preserved and reported", async () => {
+      writeSpec("SPEC-006", "active");
+      const config = makeConfig();
+      // Clean at campaign start (preconditions must pass); the timed-out
+      // OpenCode call leaves the working tree dirty (Case B) by the time Git
+      // is inspected afterward.
+      const { adapter: git, setState } = makeMutableGitAdapter(
+        makeGitState({ head: "abc123", isClean: true }),
+      );
+      const opencode: OpenCodeAdapter = {
+        async run() {
+          setState(
+            makeGitState({
+              head: "abc123",
+              isClean: false,
+              changedFiles: ["src/foo.ts"],
+              untrackedFiles: ["src/bar.ts"],
+            }),
+          );
+          return {
+            stdout: "",
+            stderr: "",
+            exitCode: -1,
+            model: "m",
+            startedAt: new Date(),
+            endedAt: new Date(),
+            timedOut: true,
+            terminationSignal: "SIGKILL",
+          };
+        },
+      };
+
+      const state = await startCampaign(
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+      let report = await runCampaignStep(
+        state,
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+      report = await runCampaignStep(
+        report.state,
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+
+      expect(report.state.phase).toBe("human_review_required");
+      const blocker = report.state.blockers.at(-1);
+      expect(blocker?.reason).toContain("working tree modified");
+      expect(blocker?.reason).toContain("src/foo.ts");
+      expect(blocker?.reason).toContain("src/bar.ts");
+      expect(blocker?.reason).toContain("do not discard");
+    });
+
+    test("implementation timeout after new commit(s) preserves them and reports divergence", async () => {
+      writeSpec("SPEC-006", "active");
+      const config = makeConfig();
+      // Clean at campaign start; the timed-out agent produced a commit before
+      // being killed, so HEAD has moved by the time Git is inspected (Case C).
+      const { adapter: git, setState } = makeMutableGitAdapter(
+        makeGitState({ head: "abc123", isClean: true }),
+      );
+      const opencode: OpenCodeAdapter = {
+        async run() {
+          setState(makeGitState({ head: "newcommitsha", isClean: true }));
+          return {
+            stdout: "",
+            stderr: "",
+            exitCode: -1,
+            model: "m",
+            startedAt: new Date(),
+            endedAt: new Date(),
+            timedOut: true,
+            terminationSignal: "SIGKILL",
+          };
+        },
+      };
+
+      const state = await startCampaign(
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+      let report = await runCampaignStep(
+        state,
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+      report = await runCampaignStep(
+        report.state,
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+
+      expect(report.state.phase).toBe("human_review_required");
+      const blocker = report.state.blockers.at(-1);
+      expect(blocker?.reason).toContain("new commit(s) exist");
+      expect(blocker?.reason).toContain("currentHead=newcommitsha");
+      expect(blocker?.reason).toContain("Do not reset, revert, amend, or auto-resume");
+    });
+
+    test("review-phase timeout stops safely and does not require implementing", async () => {
+      writeSpec("SPEC-006", "active");
+      const config = makeConfig();
+      const git = makeGitAdapter(makeGitState({ head: "implsha", isClean: true }));
+      const opencode = makeTimeoutOpenCodeAdapter({
+        stdout: "review partial stdout",
+      });
+
+      const state = createInitialState("SPEC-006", "abc123", "ECONOMY", "m1", "m2");
+      state.phase = "reviewing";
+      state.implementationSha = "implsha";
+
+      const report = await runCampaignStep(
+        state,
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+
+      expect(report.state.phase).toBe("human_review_required");
+      expect(report.state.phase).not.toBe("reviewing");
+      const dir = getCampaignDirectory(config, report.state.campaignId);
+      expect(existsSync(join(dir, "review-execution.md"))).toBe(true);
+      expect(existsSync(join(dir, "review-report.md"))).toBe(false);
+      const blocker = report.state.blockers.at(-1);
+      expect(blocker?.reason).toContain("Review agent exceeded");
+      expect(blocker?.reason).toContain("no repository change");
+    });
+
+    test("remediation-phase timeout stops safely", async () => {
+      writeSpec("SPEC-006", "active");
+      const config = makeConfig();
+      const git = makeGitAdapter(makeGitState({ head: "implsha", isClean: true }));
+      const opencode = makeTimeoutOpenCodeAdapter();
+
+      const state = createInitialState("SPEC-006", "abc123", "ECONOMY", "m1", "m2");
+      state.phase = "remediating";
+      state.implementationSha = "implsha";
+
+      // Remediation requires a stored review report to build its prompt from.
+      await writeReport(
+        config,
+        state.campaignId,
+        "review-report.md",
+        wrapResult({
+          schema: "pfy-campaign-result/v1",
+          operation: "review",
+          specId: "SPEC-006",
+          verdict: "FIX_REQUIRED",
+          baseSha: "abc123",
+          headSha: "implsha",
+          findings: [
+            { classification: "FIX_BEFORE_ACCEPTANCE", id: "F1", summary: "missing test" },
+          ],
+          blockers: [],
+          summary: "fix needed",
+        }),
+      );
+
+      const report = await runCampaignStep(
+        state,
+        { dryRun: false, once: false, resume: false },
+        { config, opencode, git },
+      );
+
+      expect(report.state.phase).toBe("human_review_required");
+      expect(report.state.phase).not.toBe("remediating");
+      const dir = getCampaignDirectory(config, report.state.campaignId);
+      expect(existsSync(join(dir, "remediation-1-execution.md"))).toBe(true);
+      expect(existsSync(join(dir, "remediation-1-report.md"))).toBe(false);
+      const blocker = report.state.blockers.at(-1);
+      expect(blocker?.reason).toContain("Remediation agent exceeded");
+    });
+
+    test("resume does not silently rerun an ambiguous timed-out implementation", async () => {
+      writeSpec("SPEC-006", "active");
+      const config = makeConfig();
+      // Git still reports HEAD at the original startingSha (Case A): the campaign
+      // state after timeout is human_review_required, and resume must not treat
+      // this as safe to auto-continue into another implementation attempt merely
+      // because HEAD matches. Verify getExpectedHead reflects the pre-timeout
+      // baseline (no phase-specific "resume as if nothing happened" branch),
+      // and that the persisted state still records the timeout blocker/phase for
+      // an operator to inspect before resuming.
+      const state = createInitialState("SPEC-006", "abc123", "ECONOMY", "m1", "m2");
+      state.phase = "human_review_required";
+      state.blockers.push({
+        type: "OPENCODE TIMEOUT",
+        reason: "[OPENCODE TIMEOUT] Implementation agent exceeded 60s",
+      });
+      state.campaignId = "resume-timeout-test";
+      await saveCampaignState(config, state);
+
+      expect(getExpectedHead(state)).toBe("abc123");
+
+      const git = makeGitAdapter(makeGitState({ head: "abc123", isClean: true }));
+      const opencode: OpenCodeAdapter = {
+        async run() {
+          throw new Error("must not invoke OpenCode again without human review");
+        },
+      };
+
+      const resumed = await startCampaign(
+        { dryRun: false, once: false, resume: true, campaignId: state.campaignId },
+        { config, opencode, git },
+      );
+      expect(resumed.phase).toBe("human_review_required");
+
+      // runCampaignStep on a human_review_required phase must stop, not re-run.
+      const report = await runCampaignStep(
+        resumed,
+        { dryRun: false, once: false, resume: true, campaignId: state.campaignId },
+        { config, opencode, git },
+      );
+      expect(report.stopped).toBe(true);
+      expect(report.state.phase).toBe("human_review_required");
+    });
+
+    test("resume after a review-phase timeout compares HEAD against the implementation SHA, not startingSha", async () => {
+      // Regression test: getExpectedHead previously fell through to startingSha
+      // for terminal phases, which would spuriously reject a valid resume after
+      // a review/remediation-phase timeout where HEAD had already legitimately
+      // advanced past startingSha.
+      const state = createInitialState("SPEC-006", "abc123", "ECONOMY", "m1", "m2");
+      state.phase = "human_review_required";
+      state.implementationSha = "implsha";
+      expect(getExpectedHead(state)).toBe("implsha");
+
+      state.remediationShas.push("remsha");
+      expect(getExpectedHead(state)).toBe("remsha");
+    });
   });
 });

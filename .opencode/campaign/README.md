@@ -153,11 +153,46 @@ The orchestrator stops for:
 - configuration failure;
 - unknown model/provider execution failure;
 - uncommitted-change ambiguity;
+- OpenCode execution timeout (`openCodeTimeoutSeconds`);
 - lifecycle reconciliation requiring product judgment.
+
+## OpenCode timeout handling
+
+An OpenCode agent exceeding `openCodeTimeoutSeconds` is a structured, recoverable campaign
+outcome, not an uncaught exception:
+
+1. the adapter sends `SIGTERM`, waits a short bounded grace period, and escalates to
+   `SIGKILL` if the process has not exited;
+2. accumulated stdout/stderr, start/end timestamps, model, and the termination signal are
+   preserved and returned as a structured result (`timedOut: true`);
+3. the orchestrator writes the normal execution report (`*-execution.md`) even though no
+   valid `PFY_CAMPAIGN_RESULT` JSON was produced — the raw `*-report.md` is **not** written
+   for a timed-out run, since that requires a valid machine-readable result;
+4. the orchestrator inspects Git immediately after termination and classifies the outcome:
+   - **A — no change**: HEAD unchanged, working tree clean. No implementation evidence.
+   - **B — uncommitted changes**: HEAD unchanged but the working tree is dirty. Changed/untracked
+     files are recorded; nothing is discarded.
+   - **C — new commit(s)**: HEAD advanced. Commits are left in place; the campaign never
+     resets, reverts, or amends them.
+5. the campaign transitions to `human_review_required` with an `OPENCODE TIMEOUT` blocker
+   recording the operation, model, configured timeout, duration, termination signal, and the
+   Git divergence case, and a `blocker-report.md` is written as a durable artifact.
+
+A timed-out execution never leaves the campaign stuck in `implementing`, `reviewing`, or
+`remediating`.
 
 ## Resume
 
-Campaign state is persisted to `resources/campaigns/<campaignId>/state.json`. On resume, the orchestrator verifies that the current Git HEAD matches the expected SHA. If Git state has diverged, it stops with an explanation.
+Campaign state is persisted to `resources/campaigns/<campaignId>/state.json`. On resume, the
+orchestrator verifies that the current Git HEAD matches the expected SHA (the most recent
+successful remediation/implementation SHA, or the starting SHA if neither exists yet — this
+applies across all phases, including terminal stop phases). If Git state has diverged, it
+stops with an explanation.
+
+A campaign stopped in `human_review_required` due to an OpenCode timeout is not automatically
+resumable into another implementation attempt: `runCampaignStep` treats `human_review_required`
+as a terminal stop and requires an operator to inspect the blocker/Git evidence and manually
+advance campaign state before continuing.
 
 ## Security
 

@@ -196,6 +196,18 @@ async function runImplementation(
   const run = await deps.opencode.run(state.models.implement, prompt);
   await writeExecutionReport(deps.config, state, "implementation", run);
 
+  if (run.timedOut) {
+    return await stopOnTimeout(
+      state,
+      deps,
+      "implement",
+      "Implementation",
+      state.models.implement,
+      state.startingSha,
+      run,
+    );
+  }
+
   if (run.exitCode !== 0) {
     return stopWithBlocker(
       state,
@@ -308,6 +320,10 @@ async function runReview(
 
   const run = await deps.opencode.run(state.models.review, prompt);
   await writeExecutionReport(deps.config, state, "review", run);
+
+  if (run.timedOut) {
+    return await stopOnTimeout(state, deps, "review", "Review", state.models.review, headSha, run);
+  }
 
   if (run.exitCode !== 0) {
     return stopWithBlocker(
@@ -435,6 +451,18 @@ async function runRemediation(
 
   const run = await deps.opencode.run(state.models.implement, prompt);
   await writeExecutionReport(deps.config, state, `remediation-${state.remediationCount}`, run);
+
+  if (run.timedOut) {
+    return await stopOnTimeout(
+      state,
+      deps,
+      `remediation-${state.remediationCount}`,
+      "Remediation",
+      state.models.implement,
+      startingSha,
+      run,
+    );
+  }
 
   if (run.exitCode !== 0) {
     return stopWithBlocker(
@@ -573,6 +601,70 @@ async function runClosure(
   return { state, stopped: true, nextSpec: next };
 }
 
+/**
+ * Handle an OpenCode execution that reached its configured timeout.
+ *
+ * Timeout is a first-class campaign stop condition, not a Git-mismatch or
+ * OpenCode-failure blocker: a timed-out agent may have made partial repository
+ * changes even though it produced no valid result. This inspects Git state,
+ * records the divergence class (A: no change, B: uncommitted changes,
+ * C: new commits), and moves the campaign to human_review_required.
+ */
+async function stopOnTimeout(
+  state: CampaignState,
+  deps: CampaignDependencies,
+  operation: string,
+  agentLabel: string,
+  model: string,
+  expectedSha: string,
+  run: OpenCodeRunResult,
+): Promise<CampaignReport> {
+  const durationMs = run.endedAt.getTime() - run.startedAt.getTime();
+  const git = await deps.git.getGitState();
+
+  let gitCase: string;
+  let gitDetail: string;
+
+  if (git.head === expectedSha && git.isClean) {
+    gitCase = "A: no repository change";
+    gitDetail = "HEAD unchanged and working tree clean. No implementation evidence was produced.";
+  } else if (git.head === expectedSha && !git.isClean) {
+    gitCase = "B: working tree modified, no new commit";
+    gitDetail = `HEAD unchanged (${git.head}) but working tree is dirty. Changed: ${git.changedFiles.join(", ") || "none"}; untracked: ${git.untrackedFiles.join(", ") || "none"}. Changes preserved; do not discard.`;
+  } else {
+    const stillAncestor = await deps.git.isAncestor(expectedSha, git.head).catch(() => false);
+    gitCase = "C: new commit(s) exist";
+    gitDetail = `Expected SHA ${expectedSha}, current HEAD ${git.head}. Starting SHA is${stillAncestor ? "" : " NOT"} an ancestor of current HEAD. Do not reset, revert, amend, or auto-resume.`;
+  }
+
+  const reason = [
+    `[OPENCODE TIMEOUT] ${agentLabel} agent exceeded ${deps.config.openCodeTimeoutSeconds}s`,
+    `operation=${operation} model=${model} configuredTimeoutSeconds=${deps.config.openCodeTimeoutSeconds}`,
+    `durationMs=${durationMs} terminationSignal=${run.terminationSignal ?? "unknown"}`,
+    `expectedSha=${expectedSha} currentHead=${git.head} workingTreeClean=${git.isClean}`,
+    `headChangedFromExpected=${git.head !== expectedSha}`,
+    `gitCase=${gitCase}`,
+    gitDetail,
+  ].join("\n");
+
+  state = addBlocker(state, "OPENCODE TIMEOUT", reason);
+  state.phase = "human_review_required";
+  await saveCampaignState(deps.config, state);
+  await appendCampaignLog(deps.config, state.campaignId, `STOPPED [OPENCODE TIMEOUT]: ${reason}`);
+  await writeReport(
+    deps.config,
+    state.campaignId,
+    "blocker-report.md",
+    ["# Blocker Report", "", `## OPENCODE TIMEOUT`, "", reason].join("\n"),
+  );
+
+  return {
+    state,
+    stopped: true,
+    reason: `[OPENCODE TIMEOUT] ${agentLabel} agent exceeded ${deps.config.openCodeTimeoutSeconds}s`,
+  };
+}
+
 async function stopWithBlocker(
   state: CampaignState,
   deps: CampaignDependencies,
@@ -586,23 +678,21 @@ async function stopWithBlocker(
   return { state, stopped: true, reason: `[${type}] ${reason}` };
 }
 
+/**
+ * Expected Git HEAD for the current campaign state, regardless of phase.
+ *
+ * This is the last SHA the campaign durably recorded: the most recent successful
+ * remediation, else the implementation SHA, else the starting SHA. Before any
+ * implementation/remediation attempt succeeds, implementationSha/remediationShas
+ * are unset, so this correctly collapses to startingSha for idle/preconditions/
+ * implementing. It also covers terminal stop phases (blocked, failed,
+ * human_review_required, completed) so that a timeout during review or
+ * remediation — where HEAD had already legitimately advanced past startingSha
+ * before the timed-out call — is compared against the correct expected SHA on
+ * resume, instead of spuriously mismatching against startingSha.
+ */
 function getExpectedHead(state: CampaignState): string {
-  if (state.phase === "idle" || state.phase === "preconditions") {
-    return state.startingSha;
-  }
-  if (state.phase === "implementing") {
-    return state.startingSha;
-  }
-  if (state.phase === "reviewing") {
-    return state.remediationShas.at(-1) ?? state.implementationSha ?? state.startingSha;
-  }
-  if (state.phase === "remediating") {
-    return state.remediationShas.at(-1) ?? state.implementationSha ?? state.startingSha;
-  }
-  if (state.phase === "closing") {
-    return state.remediationShas.at(-1) ?? state.implementationSha ?? state.startingSha;
-  }
-  return state.startingSha;
+  return state.remediationShas.at(-1) ?? state.implementationSha ?? state.startingSha;
 }
 
 async function loadLastReviewContent(
