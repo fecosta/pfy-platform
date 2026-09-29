@@ -69,6 +69,33 @@ export function H5pExerciseBlock({ activityId, exerciseId }: H5pExerciseBlockPro
 
   return (
     <section className="exercise-frame" aria-label="Exercício interativo">
+      {/*
+        SPEC-005 remediation: sandbox permissions reviewed after fixing
+        runtime authorization (Finding 1). Each retained permission is
+        required by H5P's own official embedding contract
+        (https://h5p.org/embedding — "the iframe... must include" this exact
+        permission set) and by representative content types in the corpus:
+          - allow-scripts: H5P content is a JS application; required for any
+            content type to run at all.
+          - allow-same-origin: content types persist local state (e.g. video
+            playback position, drag-and-drop progress) via the runtime
+            origin's storage; without it every reload loses in-progress
+            state. Because the runtime is a SEPARATE origin from the PFY app
+            (ADR-001's isolated-runtime requirement), this grants the iframe
+            access to the RUNTIME's origin only — not the parent PFY page's
+            origin/cookies/session, which is what would make
+            allow-same-origin + allow-scripts a sandbox-escape risk.
+          - allow-forms: content types with fill-in/quiz inputs submit
+            within the iframe.
+          - allow-popups / allow-popups-to-escape-sandbox: content types
+            with external reference links or the H5P "embed"/"view source"
+            dialogs open a new tab; without allow-popups-to-escape-sandbox
+            the opened tab would inherit this sandbox's restrictions too.
+        Removing any of these breaks real, representative H5P content types
+        rather than narrowing an actual attack surface — the isolation this
+        SPEC requires comes from runtime authorization (token-gated content)
+        and cross-origin isolation, not from further restricting the sandbox.
+      */}
       <iframe
         allow="fullscreen"
         loading="lazy"
