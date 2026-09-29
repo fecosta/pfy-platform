@@ -207,7 +207,7 @@ async function runImplementation(
 
   let result: ImplementationResult;
   try {
-    result = parseAgentResult(run.stdout) as ImplementationResult;
+    result = parseAgentResult(run.stdout, spec.id) as ImplementationResult;
   } catch (err) {
     return stopWithBlocker(
       state,
@@ -320,7 +320,7 @@ async function runReview(
 
   let result: ReviewResult;
   try {
-    result = parseAgentResult(run.stdout) as ReviewResult;
+    result = parseAgentResult(run.stdout, spec.id) as ReviewResult;
   } catch (err) {
     return stopWithBlocker(
       state,
@@ -413,7 +413,7 @@ async function runRemediation(
 
   let review: ReviewResult;
   try {
-    review = parseAgentResult(lastReview) as ReviewResult;
+    review = parseAgentResult(lastReview, spec.id) as ReviewResult;
   } catch (err) {
     return stopWithBlocker(
       state,
@@ -447,7 +447,7 @@ async function runRemediation(
 
   let result: RemediationResult;
   try {
-    result = parseAgentResult(run.stdout) as RemediationResult;
+    result = parseAgentResult(run.stdout, spec.id) as RemediationResult;
   } catch (err) {
     return stopWithBlocker(
       state,

@@ -105,6 +105,11 @@ Risk is determined by explicit override first, then deterministic keyword rules 
 
 ## Lifecycle flow
 
+SPEC filenames in this repository use a numeric prefix (`006-...md`). Discovery canonicalizes a
+three-digit prefix to the campaign/result ID (`SPEC-006`); existing `SPEC-006-...md` filenames are
+also accepted. Lifecycle moves preserve the original filename, so closing SPEC-006 produces
+`completed/006-...md`, not a duplicated `spec-006-006-...md` path.
+
 ```text
 planned -> active -> implemented_review_required -> completed
 ```

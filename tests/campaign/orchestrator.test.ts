@@ -164,6 +164,22 @@ describe("campaign orchestrator", () => {
     expect(parsed.specId).toBe("SPEC-006");
   });
 
+  test("machine-readable results must match the active canonical SPEC ID", () => {
+    const raw = wrapResult({
+      schema: "pfy-campaign-result/v1",
+      operation: "implement",
+      specId: "006-exercise-attempts-activity-progress-results",
+      status: "IMPLEMENTED",
+      startingSha: "abc",
+      endingSha: "def",
+      summary: "done",
+    });
+
+    expect(() => parseAgentResult(raw, "SPEC-006")).toThrow(
+      "Campaign result SPEC mismatch: expected SPEC-006, received 006-exercise-attempts-activity-progress-results",
+    );
+  });
+
   test("PASS flow advances to closing", async () => {
     writeSpec("SPEC-006", "active");
     const config = makeConfig();

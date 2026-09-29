@@ -72,7 +72,7 @@ const remediationSchema = z.object({
   summary: z.string(),
 });
 
-export function parseAgentResult(rawOutput: string): AgentResult {
+export function parseAgentResult(rawOutput: string, expectedSpecId?: string): AgentResult {
   const startMarker = "---PFY_CAMPAIGN_RESULT---";
   const endMarker = "---END_PFY_CAMPAIGN_RESULT---";
 
@@ -98,15 +98,22 @@ export function parseAgentResult(rawOutput: string): AgentResult {
 
   const base = z.object({ operation: z.enum(["implement", "review", "remediate"]) }).parse(parsed);
 
+  let result: AgentResult;
   if (base.operation === "implement") {
-    return implementationSchema.parse(parsed) as ImplementationResult;
+    result = implementationSchema.parse(parsed) as ImplementationResult;
+  } else if (base.operation === "review") {
+    result = reviewSchema.parse(parsed) as ReviewResult;
+  } else {
+    result = remediationSchema.parse(parsed) as RemediationResult;
   }
 
-  if (base.operation === "review") {
-    return reviewSchema.parse(parsed) as ReviewResult;
+  if (expectedSpecId && result.specId !== expectedSpecId) {
+    throw new Error(
+      `Campaign result SPEC mismatch: expected ${expectedSpecId}, received ${result.specId}`,
+    );
   }
 
-  return remediationSchema.parse(parsed) as RemediationResult;
+  return result;
 }
 
 export function extractDecisionRequiredBlockers(result: AgentResult): Blocker[] {

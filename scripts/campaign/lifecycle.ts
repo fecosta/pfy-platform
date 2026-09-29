@@ -2,7 +2,12 @@ import { readdir, readFile, rename, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { ActiveSpec } from "./types";
 
-const SPEC_ID_PATTERN = /^(SPEC-\d+)/i;
+const SPEC_ID_PATTERN = /^(?:SPEC-)?(\d{3})(?=-|\.|$)/i;
+
+function getCanonicalSpecId(fileName: string): string {
+  const match = fileName.match(SPEC_ID_PATTERN);
+  return match ? `SPEC-${match[1]}` : fileName.replace(/\.md$/, "");
+}
 
 function getSpecsRoot(): string {
   return process.env.PFY_CAMPAIGN_SPECS_ROOT
@@ -30,12 +35,11 @@ export async function discoverActiveSpec(): Promise<ActiveSpec | null> {
 
   const fileName = mdFiles[0];
   const filePath = resolve(activeDir, fileName);
-  const match = fileName.match(SPEC_ID_PATTERN);
-  const id = match ? match[1].toUpperCase() : fileName.replace(/\.md$/, "");
+  const id = getCanonicalSpecId(fileName);
 
   const content = await readFile(filePath, "utf-8");
   const titleMatch = content.match(/^#\s*(.+)$/m);
-  const title = titleMatch ? titleMatch[1].trim() : undefined;
+  const title = titleMatch ? cleanTitle(titleMatch[1], id) : undefined;
 
   return { id, filePath, title };
 }
@@ -44,7 +48,7 @@ export async function closeSpecLifecycle(spec: ActiveSpec): Promise<{ from: stri
   const root = getSpecsRoot();
   const completedDir = resolve(root, "completed");
   const fromPath = spec.filePath;
-  const toPath = resolve(completedDir, `${spec.id.toLowerCase()}-${baseName(fromPath)}`);
+  const toPath = resolve(completedDir, baseName(fromPath));
 
   await rename(fromPath, toPath);
 
@@ -60,63 +64,57 @@ function baseName(filePath: string): string {
   return filePath.split("/").pop() ?? filePath;
 }
 
-export function updateReadmeLifecycle(readme: string, spec: ActiveSpec): string {
-  const completedHeader = "### Completed";
-
-  const activeEntry = `\n- **${spec.id}${spec.title ? ` — ${spec.title}` : ""}**\n  - \`active/${baseName(spec.filePath)}\`\n  - State: ACTIVE — IMPLEMENTED / REVIEW REQUIRED.\n`;
-
-  const completedEntry = `\n- **${spec.id}${spec.title ? ` — ${spec.title}` : ""}**\n  - \`completed/${spec.id.toLowerCase()}-${baseName(spec.filePath)}\`\n  - State: COMPLETED — COHERENCE VERIFIED.\n`;
-
-  let result = readme;
-
-  if (result.includes(activeEntry.trim())) {
-    result = result.replace(activeEntry.trim(), completedEntry.trim());
-  } else {
-    result = moveEntryToCompleted(result, spec, completedEntry, completedHeader);
-  }
-
-  result = updateCurrentStateSentence(result, spec.id);
-  return result;
+function cleanTitle(title: string, id: string): string {
+  const escapedId = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return title.trim().replace(new RegExp(`^${escapedId}\\s*(?:[-—]{1,3}|:)?\\s*`, "i"), "");
 }
 
-function moveEntryToCompleted(
-  readme: string,
-  spec: ActiveSpec,
-  completedEntry: string,
-  completedHeader: string,
-): string {
-  const activeStart = readme.indexOf("### Active");
+export function updateReadmeLifecycle(readme: string, spec: ActiveSpec): string {
+  const completedHeader = "### Completed";
+  const escapedId = spec.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const activeStart = readme.indexOf("### Active", readme.indexOf("## Current state"));
   const activeEnd = readme.indexOf("###", activeStart + "### Active".length);
   const activeSection =
-    activeStart === -1
-      ? ""
-      : readme.slice(activeStart, activeEnd === -1 ? readme.length : activeEnd);
-
-  const bulletPattern = new RegExp(
-    `- \\*\\*${spec.id}[^*]*\\*\\*[^\\n]*\\n(?:  - [^\\n]*\\n?)*`,
-    "g",
+    activeStart < 0 ? "" : readme.slice(activeStart, activeEnd < 0 ? undefined : activeEnd);
+  const itemPattern = new RegExp(
+    `(- \\*\\*${escapedId}(?:\\s+[-—]{1,3}[^*]*)?\\*\\*[^\\n]*\\n(?:[ \\t]+[^\\n]*(?:\\n|$))*)`,
   );
-  const cleanedActive = activeSection.replace(bulletPattern, "");
+  const activeItem = activeSection.match(itemPattern)?.[1];
+  let completedEntry = activeItem
+    ? activeItem
+        .replace(/`active\/[^`]+`/, `\`completed/${baseName(spec.filePath)}\``)
+        .replace(/State: [^\n]*/, "State: COMPLETED — COHERENCE VERIFIED.")
+        .trimEnd()
+    : `- **${spec.id}${spec.title ? ` — ${spec.title}` : ""}**\n  - \`completed/${baseName(spec.filePath)}\`\n  - State: COMPLETED — COHERENCE VERIFIED.`;
 
-  if (activeStart !== -1 && activeEnd !== -1) {
-    readme = readme.slice(0, activeStart) + cleanedActive + readme.slice(activeEnd);
+  if (activeItem && activeStart >= 0) {
+    const cleanedActive = activeSection.replace(activeItem, "");
+    readme =
+      readme.slice(0, activeStart) + cleanedActive + (activeEnd < 0 ? "" : readme.slice(activeEnd));
   }
 
-  const completedIdx = readme.indexOf(completedHeader);
-  if (completedIdx === -1) {
-    return readme + "\n" + completedHeader + "\n" + completedEntry;
+  const currentStateStart = readme.indexOf("## Current state");
+  const completedIdx = readme.indexOf(
+    completedHeader,
+    currentStateStart < 0 ? 0 : currentStateStart,
+  );
+  if (completedIdx < 0) {
+    readme = `${readme}\n${completedHeader}\n\n${completedEntry}\n`;
+  } else {
+    const insertAt = completedIdx + completedHeader.length;
+    completedEntry = completedEntry.trim();
+    readme = `${readme.slice(0, insertAt)}\n\n${completedEntry}${readme.slice(insertAt)}`;
   }
-
-  const insertAfter = completedIdx + completedHeader.length;
-  return readme.slice(0, insertAfter) + completedEntry + readme.slice(insertAfter);
+  return updateCurrentStateSentence(readme, spec.id);
 }
 
 function updateCurrentStateSentence(readme: string, completedSpecId: string): string {
+  const escapedId = completedSpecId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const sentencePattern = new RegExp(
-    `${completedSpecId} is (?:the next planned roadmap item|currently active)\\.`,
+    `${escapedId} is (?:the next planned roadmap item|(?:currently )?active)(?=[.;])`,
     "g",
   );
-  return readme.replace(sentencePattern, `${completedSpecId} is completed.`);
+  return readme.replace(sentencePattern, `${completedSpecId} is completed`);
 }
 
 export async function findNextPlannedSpec(): Promise<ActiveSpec | null> {
@@ -133,12 +131,11 @@ export async function findNextPlannedSpec(): Promise<ActiveSpec | null> {
 
   const fileName = mdFiles[0];
   const filePath = resolve(plannedDir, fileName);
-  const match = fileName.match(SPEC_ID_PATTERN);
-  const id = match ? match[1].toUpperCase() : fileName.replace(/\.md$/, "");
+  const id = getCanonicalSpecId(fileName);
 
   const content = await readFile(filePath, "utf-8");
   const titleMatch = content.match(/^#\s*(.+)$/m);
-  const title = titleMatch ? titleMatch[1].trim() : undefined;
+  const title = titleMatch ? cleanTitle(titleMatch[1], id) : undefined;
 
   return { id, filePath, title };
 }
