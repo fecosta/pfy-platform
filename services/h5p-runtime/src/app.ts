@@ -20,6 +20,10 @@ import { InMemoryStorage } from "./storage.js";
 // already-verified runtime token when the player HTML is rendered. See the
 // contentFilesUrlPlayerOverride comment below for why this is necessary.
 const CONTENT_TOKEN_PLACEHOLDER = "__PFY_RUNTIME_TOKEN_PLACEHOLDER__";
+const CONTENT_FILE_SECURITY_HEADERS = {
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "X-Content-Type-Options": "nosniff",
+};
 
 /**
  * Builds the H5P runtime Express app plus the Lumi editor/player instances
@@ -227,12 +231,15 @@ export async function createApp(config: RuntimeConfig) {
       );
       if (range) {
         res.writeHead(206, {
+          ...CONTENT_FILE_SECURITY_HEADERS,
           "Content-Type": mimetype,
           "Content-Length": range.end - range.start + 1,
           "Content-Range": `bytes ${range.start}-${range.end}/${stats.size}`,
+          "Accept-Ranges": "bytes",
         });
       } else {
         res.writeHead(200, {
+          ...CONTENT_FILE_SECURITY_HEADERS,
           "Content-Type": mimetype,
           "Content-Length": stats.size,
           "Accept-Ranges": "bytes",
@@ -252,7 +259,6 @@ export async function createApp(config: RuntimeConfig) {
   // every player regardless of which content is being viewed, so it carries
   // no confidential or per-learner information and requires no token.
   app.use("/h5p/libraries", express.static(storage.libraries));
-  app.use("/h5p/temp", express.static(storage.temporary));
 
   // Admin: library installation from an extracted library directory.
   app.post("/h5p/admin/libraries", async (req, res) => {

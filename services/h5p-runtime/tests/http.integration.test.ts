@@ -25,6 +25,7 @@ describe("H5P runtime HTTP authorization (Finding 1, Finding 5)", () => {
   let baseUrl: string;
   let storageDir: string;
   let contentId: string;
+  let temporaryFilePath = "";
   const OTHER_CONTENT_ID = "does-not-exist-and-must-never-be-served";
 
   before(async () => {
@@ -85,6 +86,20 @@ describe("H5P runtime HTTP authorization (Finding 1, Finding 5)", () => {
       Readable.from(Buffer.from("not-really-a-png-but-good-enough-for-the-test")),
       adminUser,
     );
+
+    const temporaryUser = {
+      id: "uploaded-user",
+      name: "uploaded-user",
+      type: "local" as const,
+      email: "uploaded-user@pfy.local",
+    };
+    const temporaryFilename = await editor.temporaryFileManager.addFile(
+      "uploaded.png",
+      Readable.from(Buffer.from("private temporary upload")),
+      temporaryUser,
+    );
+    assert.equal(temporaryFilename.includes("/"), false);
+    temporaryFilePath = `uploaded-user/${temporaryFilename}`;
 
     server = app.listen(0);
     await new Promise<void>((resolve) => server.once("listening", resolve));
@@ -167,6 +182,15 @@ describe("H5P runtime HTTP authorization (Finding 1, Finding 5)", () => {
       assert.equal(html.includes("__PFY_RUNTIME_TOKEN_PLACEHOLDER__"), false);
       assert.match(html, new RegExp(`/h5p/content/${contentId}/files\\?token=`));
     });
+
+    it("renders playback without relying on a public temporary-file path", async () => {
+      const token = validToken();
+      const player = await fetch(`${baseUrl}/h5p/play/${contentId}?token=${token}`);
+      assert.equal(player.status, 200);
+
+      const temporaryRoute = await fetch(`${baseUrl}/h5p/temp/${temporaryFilePath}`);
+      assert.equal(temporaryRoute.status, 404);
+    });
   });
 
   describe("/h5p/content/:contentId/files/* (Finding 1: direct asset access)", () => {
@@ -196,8 +220,41 @@ describe("H5P runtime HTTP authorization (Finding 1, Finding 5)", () => {
         `${baseUrl}/h5p/content/${contentId}/files/images/secret.png?token=${token}`,
       );
       assert.equal(res.status, 200);
+      assert.equal(res.headers.get("content-type"), "image/png");
+      assert.equal(res.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+      assert.equal(res.headers.get("x-content-type-options"), "nosniff");
+      assert.equal(res.headers.get("accept-ranges"), "bytes");
+      assert.equal(
+        res.headers.get("content-length"),
+        String("not-really-a-png-but-good-enough-for-the-test".length),
+      );
       const body = await res.text();
       assert.equal(body, "not-really-a-png-but-good-enough-for-the-test");
+    });
+
+    it("preserves security and range headers on a partial response", async () => {
+      const token = validToken();
+      const res = await fetch(
+        `${baseUrl}/h5p/content/${contentId}/files/images/secret.png?token=${token}`,
+        { headers: { Range: "bytes=0-9" } },
+      );
+      assert.equal(res.status, 206);
+      assert.equal(res.headers.get("content-type"), "image/png");
+      assert.equal(res.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+      assert.equal(res.headers.get("x-content-type-options"), "nosniff");
+      assert.equal(res.headers.get("accept-ranges"), "bytes");
+      assert.equal(res.headers.get("content-length"), "10");
+      assert.equal(
+        res.headers.get("content-range"),
+        `bytes 0-9/${"not-really-a-png-but-good-enough-for-the-test".length}`,
+      );
+      assert.equal(await res.text(), "not-really");
+    });
+
+    it("does not expose uploaded temporary files through the former static route", async () => {
+      const res = await fetch(`${baseUrl}/h5p/temp/${temporaryFilePath}`);
+      assert.equal(res.status, 404);
+      assert.equal((await res.text()).includes("private temporary upload"), false);
     });
 
     it("cannot be bypassed by path traversal in the filename segment", async () => {
