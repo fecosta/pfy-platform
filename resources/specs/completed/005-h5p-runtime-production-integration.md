@@ -1060,7 +1060,7 @@ implementation and validation below close this bounded remediation and return th
 
 Investigation of the installed, pinned Lumi sources confirmed:
 
-- `@lumieducation/h5p-server@10.0.4` defaults `temporaryFilesUrl` to `/temp-files`; its player URL
+- `@lumieducation/h5p-server@10.0.4` defaults `temporaryFilesUrl` to `/temp-files`; Lumi's URL
   generator uses that setting for editor file uploads. `@lumieducation/h5p-express@10.0.5` provides
   an optional `/temp-files/:file` route that calls Lumi's `H5PAjaxEndpoint.getTemporaryFile`, which
   checks `TemporaryFilePermission.View` and accesses a user-scoped temporary-storage directory.
@@ -1090,9 +1090,9 @@ content length, content range and `Accept-Ranges`; authorization and range handl
 
 ### Final validation evidence
 
-The following checks were executed successfully. The harness-injected `NODE_OPTIONS` pointed at a
-missing Headroom shim, so Node commands were run with `env -u NODE_OPTIONS`; no project validation
-was skipped:
+The requested checks were executed. The harness-injected `NODE_OPTIONS` pointed at a missing
+Headroom shim, so Node commands were run with `env -u NODE_OPTIONS`. The root unit-test command
+reported its existing 17 environment-dependent cases as skipped, as noted below:
 
 1. `services/h5p-runtime`: `npm run typecheck`, `npm run lint`, `npm test` — pass; 38 runtime tests
    pass. Lint reports its existing Express `_next` unused-parameter warning and Next page-directory
