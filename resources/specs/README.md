@@ -108,17 +108,14 @@ Verify:
   - Establishes canonical Activity, Exercise, Percurso, safe catalog discovery and authenticated free-content access foundations.
   - State: COMPLETED — COHERENCE VERIFIED.
 
+### Completed
+
 - **SPEC-005 — H5P Runtime Production Integration**
   - `completed/005-h5p-runtime-production-integration.md`
   - Integrates the isolated Lumi H5P runtime as an implementation of PFY Exercises behind the PFY H5P Adapter.
-  - State: COMPLETED — REMEDIATED AFTER INDEPENDENT SECURITY REVIEW / PRODUCTION LEGAL GATE OPEN. An
-    independent review previously rejected completion (runtime content-asset authorization bypass,
-    malformed-token crash, import-persistence ordering, broken import whitelist/core-URL
-    configuration, missing mapping uniqueness, absent integration/browser validation). All findings
-    were confirmed and fixed, with additional latent defects found and fixed during remediation
-    (broken whitelist/core-URL config meant import and playback were non-functional independent of
-    the security issues). Full remediation record, validation evidence and re-review packet in §22a
-    of the SPEC file.
+  - State: COMPLETED — FINAL RE-REVIEW REMEDIATION / PRODUCTION LEGAL GATE OPEN. The final review removed
+    unauthenticated temporary-file serving and verified referrer/content-type security headers on
+    normal and byte-range content-file responses. Full investigation and validation evidence is in §22b.
 
 ### Active
 
@@ -141,8 +138,8 @@ The dependency-oriented planned roadmap after SPEC-005 is:
 9. **SPEC-014 — Legacy Learning Content Migration**
 10. **SPEC-015 — Optional Historical Learning Data Migration**
 
-SPEC-001 through SPEC-005 are completed (SPEC-005 remediated after independent review — see §22a of
-its SPEC file). SPEC-006 is the next planned roadmap item.
+SPEC-001 through SPEC-005 are completed (SPEC-005's final re-review remediation and evidence are in
+§22b of its SPEC file). SPEC-006 remains the next planned roadmap item and is not active.
 
 Planned SPEC filenames may retain their current names until individually reconciled; this index defines the intended current roadmap semantics.
 
@@ -155,7 +152,7 @@ Several planned learning-domain SPECs were drafted before the composed Activity 
 | SPEC | State |
 |---|---|
 | SPEC-004 | Reconciled with ADR-002 in its planned file; open decisions listed in its §17 (including Exercise scoreability) must be re-checked at activation. |
-| SPEC-005 | Completed; remediated after independent security review (see §22a); reconciled with ADR-002; production legal gate remains open. |
+| SPEC-005 | Completed after final independent re-review remediation (see §22b); reconciled with ADR-002; production legal gate remains open. |
 | SPEC-006 | Reconciled with ADR-002 in its planned file; activation blocked by `DECISION REQUIRED` items (Activity Performance `adequate`/`attention` aggregation; Exercise scoreability / assessment semantics). |
 | SPEC-007 | Stale one-Activity-to-one-H5P wording corrected; full reconciliation still required. |
 | SPEC-008 | Learning-history wording aligned with canonical evidence layers; full reconciliation still required. |

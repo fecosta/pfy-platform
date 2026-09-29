@@ -89,9 +89,29 @@ Persistent runtime state lives under `PFY_H5P_STORAGE_PATH`:
 storage/
 ├── content/        # imported H5P content
 ├── libraries/      # installed H5P libraries
-├── temporary/      # temporary upload/editor state
+├── temporary/      # temporary package-import/editor state (not publicly served)
 └── user-data/      # H5P user state and finished data
 ```
+
+### Temporary files and editor boundary
+
+Package import uses Lumi's temporary storage internally while validating and
+extracting an upload, then copies referenced assets into permanent content
+storage during the final sanitized save. Learner playback reads those permanent
+assets through the token-protected
+`/h5p/content/:contentId/files/*` route; it does not require HTTP access to
+temporary storage.
+
+The runtime does not expose a public static route for `temporary/`:
+`/h5p/temp/*` returns 404. Lumi's editor integration generates temporary-file
+URLs using its configured `temporaryFilesUrl` (default `/temp-files`), and the
+optional `@lumieducation/h5p-express` adapter maps that route to Lumi's
+permission-checked `getTemporaryFile` method. The current PFY runtime does not
+mount the editor routes or expose an editor workflow. In this pinned setup,
+Lumi's default permission system is permissive, so mounting the optional route
+alone would not provide PFY user authorization. Any future editor integration
+must establish authenticated PFY user context and a restrictive Lumi
+permission system before enabling temporary-file HTTP access.
 
 ### Local development
 
@@ -191,6 +211,12 @@ contract, independent of which provider is chosen:
 - `/h5p/libraries` remains unauthenticated: it serves H5P core/runtime
   JavaScript and CSS shared by every piece of content, not PFY-protected
   learner content.
+- Temporary upload/extraction files are never served with `express.static`.
+  The unguarded `/h5p/temp` mount was removed; import accesses temporary files
+  through Lumi's owner-scoped storage manager and promotes them to permanent
+  content before learner playback. Regression tests prove temporary files are
+  not readable through the former path and imported assets remain available
+  to the protected content-file route.
 - Import sanitization runs on parameters returned by `uploadPackage`
   (temporary-storage extraction) **before** the single, final
   `saveOrUpdateContentReturnMetaData` persistence call — see "Import
@@ -204,6 +230,11 @@ contract, independent of which provider is chosen:
   `crypto.timingSafeEqual` (constant-time; rejects mismatched-length secrets
   without leaking timing information).
 - Service/admin credentials never reach the browser.
+
+The player and successful permanent content-file responses, including `206`
+byte-range responses, set `Referrer-Policy: strict-origin-when-cross-origin`
+and `X-Content-Type-Options: nosniff`. The HTTP integration tests assert both
+headers on normal and partial content-file responses.
 
 ## Import pipeline (remediation note — Finding 3)
 

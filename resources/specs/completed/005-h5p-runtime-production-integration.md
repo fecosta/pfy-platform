@@ -1,6 +1,6 @@
 # SPEC-005 — H5P Runtime Production Integration
 
-**Status:** COMPLETED — REMEDIATED AFTER INDEPENDENT SECURITY REVIEW / PRODUCTION LEGAL GATE OPEN (see §22a)
+**Status:** COMPLETED — FINAL RE-REVIEW REMEDIATION / PRODUCTION LEGAL GATE OPEN (see §22b)
 **Depends on:** SPEC-004 — Learning Content Model, Percursos & Shared Library  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, `docs/ADR-001-LUMI-H5P-RUNTIME.md`, `docs/ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md` and applicable accepted ADRs  
 **Technical evidence:** completed `fecosta/pfy-h5p-spike` technical spike — `CONDITIONAL GO`
@@ -1047,3 +1047,69 @@ order:
 Checks not run: production deployment to a real hosting platform (out of SPEC-005 scope per
 Implementation Freedom §17); the ADR-001 GPL/legal review (explicitly out of engineering scope, gate
 remains open per §20).
+
+---
+
+## 22b. Final re-review remediation
+
+SPEC-005 was temporarily moved to `active/` for the final independent re-review findings. The
+implementation and validation below close this bounded remediation and return the SPEC to
+`completed/`. SPEC-006 remains planned and was not started.
+
+### Finding A — temporary storage exposure
+
+Investigation of the installed, pinned Lumi sources confirmed:
+
+- `@lumieducation/h5p-server@10.0.4` defaults `temporaryFilesUrl` to `/temp-files`; its player URL
+  generator uses that setting for editor file uploads. `@lumieducation/h5p-express@10.0.5` provides
+  an optional `/temp-files/:file` route that calls Lumi's `H5PAjaxEndpoint.getTemporaryFile`, which
+  checks `TemporaryFilePermission.View` and accesses a user-scoped temporary-storage directory.
+- The current PFY runtime does not mount the Lumi editor routes or expose an editor workflow. Its
+  separate `/h5p/temp` route was a raw `express.static(storage.temporary)` mount and was not the
+  Lumi-generated temporary-file URL.
+- The active admin package-import path calls Lumi `uploadPackage`, which validates/extracts and
+  stores referenced package assets in the temporary storage under the admin user. The subsequent
+  sanitized `saveOrUpdateContentReturnMetaData` call promotes those assets to permanent content
+  storage. Learner playback reads the permanent assets from the existing token-protected
+  `/h5p/content/:contentId/files/*` route; it does not require an HTTP temporary-file endpoint.
+- Lumi's default `LaissezFairePermissionSystem` permits all temporary-file checks, so mounting the
+  optional Lumi Express route alone would not establish PFY authorization for a future editor.
+
+The smallest correct change was to remove the raw `/h5p/temp` static route. No replacement temporary
+HTTP route is exposed. Tests seed an actual Lumi temporary upload and verify the former path returns
+404, render playback without that path, and import a package with an asset to verify it is promoted
+from temporary to permanent storage. Future editor work must establish authenticated PFY user
+context and restrictive Lumi permissions before enabling Lumi's temporary-file endpoint.
+
+### Finding B — content-file response headers
+
+Successful permanent content-file responses now include
+`Referrer-Policy: strict-origin-when-cross-origin` and `X-Content-Type-Options: nosniff` for both
+normal `200` and byte-range `206` responses. Tests assert these headers along with content type,
+content length, content range and `Accept-Ranges`; authorization and range handling are preserved.
+
+### Final validation evidence
+
+The following checks were executed successfully. The harness-injected `NODE_OPTIONS` pointed at a
+missing Headroom shim, so Node commands were run with `env -u NODE_OPTIONS`; no project validation
+was skipped:
+
+1. `services/h5p-runtime`: `npm run typecheck`, `npm run lint`, `npm test` — pass; 38 runtime tests
+   pass. Lint reports its existing Express `_next` unused-parameter warning and Next page-directory
+   informational notice.
+2. Root: `npm run format`, `npm run lint`, `npm run typecheck`, `npm test` — pass; 64 tests pass and
+   17 environment-dependent integration tests are skipped by the existing test configuration.
+3. Root: `npm run build` — pass.
+4. `npx playwright test tests/e2e/h5p-playback.spec.ts` — pass (1 test) using the already-running
+   local Supabase/Inbucket services and the runtime service booted by the Playwright configuration.
+
+No schema or migration changes were required. No product semantics, Exercise ↔ Lumi mapping,
+authorization/token model, import-sanitization order, runtime isolation or privileged-secret
+controls were changed.
+
+### Remaining gates
+
+- ADR-001 GPL/legal review remains open; do not label this runtime production-rollout ready.
+- Deployment with persistent storage on a real hosting platform has not been validated.
+- A PFY-authorized editor workflow remains outside this SPEC; the Lumi temporary-file endpoint must
+  not be enabled until its user and permission integration is addressed.
