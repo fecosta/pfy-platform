@@ -10,6 +10,6 @@
   "requireIndependentReview": true,
   "allowAutoCommits": false,
   "autoApproveOpenCodePermissions": true,
-  "openCodeTimeoutSeconds": 1800,
+  "openCodeTimeoutSeconds": 3600,
   "campaignReportLocation": "resources/campaigns"
 }
