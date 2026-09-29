@@ -1,6 +1,6 @@
 # SPEC-005 — H5P Runtime Production Integration
 
-**Status:** COMPLETED — COHERENCE VERIFIED / PRODUCTION LEGAL GATE OPEN  
+**Status:** COMPLETED — REMEDIATED AFTER INDEPENDENT SECURITY REVIEW / PRODUCTION LEGAL GATE OPEN (see §22a)
 **Depends on:** SPEC-004 — Learning Content Model, Percursos & Shared Library  
 **Authority:** `docs/PRODUCT_DEFINITION.md`, `docs/ARCHITECTURE.md`, `docs/ADR-001-LUMI-H5P-RUNTIME.md`, `docs/ADR-002-ACTIVITY-COMPOSITION-H5P-EXERCISE-BOUNDARY.md` and applicable accepted ADRs  
 **Technical evidence:** completed `fecosta/pfy-h5p-spike` technical spike — `CONDITIONAL GO`
@@ -950,3 +950,100 @@ Do not label the runtime production-rollout ready until the applicable legal gat
 - Validation run: `npm run format`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`
   passed; runtime service `npm run typecheck` and `npm test` passed; runtime health/readiness
   verified locally.
+
+---
+
+## 22a. Remediation (post-independent-review)
+
+An independent security and acceptance review rejected the completion recorded above. This SPEC was
+moved back from `completed/` to `active/` and is not re-closed until the findings below are resolved
+with actual evidence (not merely implemented).
+
+### Findings confirmed and fixed
+
+1. **Runtime content asset authorization (CRITICAL).** `/h5p/content/:contentId/files` was served by
+   unauthenticated `express.static`; knowing/guessing a Lumi content id was sufficient to read its
+   files directly, bypassing the token check enforced only on `/h5p/play/:contentId`. Fixed: the
+   route now requires the same content-matching token, delegating to h5p-server's own
+   `H5PAjaxEndpoint.getContentFile`. The player's own generated asset URLs
+   (`contentFilesUrlPlayerOverride`) now embed the verified token too — a separate, independently
+   discovered bug (the override was silently dropped by `H5PConfig`'s constructor, so player asset
+   URLs pointed at a bare, unauthenticated path even after gating the route).
+2. **Malformed runtime-token handling (CRITICAL).** `verifyRuntimeToken` threw an uncaught
+   `RangeError` from `crypto.timingSafeEqual` on any malformed-length signature, in both the PFY
+   application and the runtime service. Fixed: length/decode validation before `timingSafeEqual`,
+   explicit header/algorithm checks, and a shared regression suite of ~12 malformed-input classes
+   plus a source-parity test (`tests/h5p-token-parity.test.ts`) so the two copies cannot silently
+   diverge again.
+3. **Import security ordering (CRITICAL).** `addPackageLibrariesAndContent` was verified (by reading
+   its actual implementation) to persist unsanitized parameters to permanent storage before the
+   route's sanitize-then-resave step ran — a second write that could be interrupted, leaving
+   unsanitized content durable. Fixed: import now uses `uploadPackage` (temporary-storage-only) +
+   sanitize + a single `saveOrUpdateContentReturnMetaData` persistence call.
+4. **H5P-aware semantic sanitization.** Confirmed the fix for (3) also routes imported content through
+   Lumi's own trusted `SemanticsEnforcer` (the editor-save sanitizer, semantics.json-driven) for the
+   first time — previously bypassed entirely. The independent `sanitize.ts` layer is retained and
+   documented as a defense-in-depth backstop, not a replacement.
+5. **Missing integration/browser/security validation.** Added: runtime HTTP authorization integration
+   tests (`services/h5p-runtime/tests/http.integration.test.ts`), import-security integration tests
+   against real `.h5p` packages (`services/h5p-runtime/tests/import.integration.test.ts`), PFY
+   adapter authorization integration tests against local Supabase (extended
+   `tests/h5p.integration.test.ts`, which also had a pre-existing fixture bug — mismatched
+   `Date.now()` calls meant it could never pass against a real Supabase instance), and a cross-origin
+   Playwright E2E test (`tests/e2e/h5p-playback.spec.ts`).
+6. **Exercise-to-Lumi mapping cardinality.** `lumi_content_id` lacked a uniqueness constraint.
+   Confirmed 1:1 is authoritative per ADR-002's bidirectional mapping and SPEC-005 §6.2. Added
+   additive migration `20260929000000_exercise_h5p_mapping_lumi_content_id_unique.sql`.
+7. **Durable production runtime storage / operational contract.** Documented the persistent-volume
+   contract (mount, restart, backup/restore, failure behavior) in `docs/H5P-RUNTIME-OPS.md`, without
+   selecting a hosting platform (out of SPEC-005 scope).
+8. **Premature SPEC lifecycle closure.** This document moved back to `active/`;
+   `resources/specs/README.md` updated accordingly.
+
+### Additional defects found during remediation (not in the original review, discovered via testing)
+
+- `PFY_H5P_CONTENT_WHITELIST`/`PFY_H5P_LIBRARY_WHITELIST` defaults carried leading dots, which
+  h5p-server's validator does not expect — **every file in every import failed whitelist validation**,
+  meaning the import feature was completely non-functional before this remediation, independent of
+  the ordering issue in Finding 3.
+- The default `PFY_H5P_CORE_URL` pointed at git tag `1.26.0`, which does not exist upstream — every
+  core script/style request would 404 in a real browser, meaning no H5P content could ever render
+  regardless of authorization. Fixed to the verified-reachable `1.27.0`.
+- The runtime's Express error-handling middleware was declared with 3 parameters, which Express 4
+  never recognizes as an error handler (requires exactly 4) — it was silently dead code.
+- Admin/runtime secret comparisons used `===` instead of constant-time comparison.
+
+### Disposition of review findings
+
+See the accompanying implementation report (delivered as the final chat response for this
+remediation) for the full per-finding CONFIRMED/PARTIALLY CONFIRMED/NOT REPRODUCED disposition,
+evidence and validation commands actually run.
+
+### Remediation validation evidence
+
+All of the following were actually run (not merely implemented) against this remediation, in this
+order:
+
+1. `services/h5p-runtime`: `npm run typecheck`, `npm run lint`, `npm test` (34 tests: token
+   malformed-input regression, sanitizer regression, HTTP authorization integration, import-security
+   integration against real `.h5p` packages) — all pass.
+2. `npm run format`, `npm run lint`, `npm run typecheck` (root) — pass, zero errors (one pre-existing
+   informational warning: unused `_next` parameter required by Express's 4-arg error-handler
+   signature).
+3. `npm test` (root, 64 unit tests) — pass.
+4. `supabase db reset --local` — the additive mapping-uniqueness migration applies cleanly; manually
+   verified the constraint rejects a duplicate `lumi_content_id` insert via `psql`.
+5. `PFY_SUPABASE_INTEGRATION=1 npx vitest run tests/identity.integration.test.ts
+   tests/content.integration.test.ts tests/h5p.integration.test.ts` against local Supabase — 17 tests
+   pass, including new PFY-adapter authorization tests (exercise-not-in-activity,
+   entitlement-required fail-closed, unpublished-Activity fail-closed, unmapped-Exercise fail-closed,
+   correctly-scoped-token happy path) and the mapping-RLS test (whose fixture had a pre-existing bug
+   — mismatched `Date.now()` calls — that is also fixed here).
+6. `npx playwright test` (5 E2E specs, including the new
+   `tests/e2e/h5p-playback.spec.ts` driving two real cross-origin H5P Exercise blocks in one Activity
+   through the real runtime, real admin import route and real Magic Link auth) — all pass.
+7. `npm run build` (root) and `npm run build` (`services/h5p-runtime`) — both succeed.
+
+Checks not run: production deployment to a real hosting platform (out of SPEC-005 scope per
+Implementation Freedom §17); the ADR-001 GPL/legal review (explicitly out of engineering scope, gate
+remains open per §20).
