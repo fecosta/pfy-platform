@@ -4,6 +4,7 @@ import {
   activityPerformance,
   activityProgress,
   latestCompletedAttempt,
+  sanitizeAttemptText,
 } from "@/lib/attempts/derivations";
 import type { ExerciseAttempt } from "@/lib/attempts/types";
 
@@ -47,10 +48,19 @@ describe("attempt derivations", () => {
 
   it("derives completion independently of score and evaluation", () => {
     expect(activityProgress(["e1", "e2"], [attempt()])).toBe("in_progress");
+    expect(activityProgress(["e1"], [attempt({ exerciseId: "e2" })])).toBe("not_started");
+    expect(
+      activityProgress(["e1", "e2"], [attempt(), attempt({ id: "a2", exerciseId: "e2" })]),
+    ).toBe("completed");
     expect(activityProgress(["e1"], [attempt({ assessmentModeAtAttempt: "manual" })])).toBe(
       "completed",
     );
     expect(activityProgress(["e1"], [])).toBe("not_started");
+    expect(activityProgress([], [attempt()])).toBe("not_started");
+  });
+
+  it("sanitizes plain text without changing legitimate Unicode", () => {
+    expect(sanitizeAttemptText("Olá\r\nMundo\u0000\u0007\u000b!")).toBe("Olá\nMundo!");
   });
 
   it("uses historical policy and manual evaluation score", () => {

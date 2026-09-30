@@ -20,12 +20,24 @@ export function activityProgress(
   exerciseIds: string[],
   attempts: ExerciseAttempt[],
 ): ActivityProgressState {
-  const attempted = new Set(attempts.map((attempt) => attempt.exerciseId));
+  const exerciseSet = new Set(exerciseIds);
+  const attempted = new Set(
+    attempts
+      .filter((attempt) => exerciseSet.has(attempt.exerciseId))
+      .map((attempt) => attempt.exerciseId),
+  );
   if (attempted.size === 0) return "not_started";
   if (exerciseIds.every((exerciseId) => latestCompletedAttempt(attempts, exerciseId))) {
     return "completed";
   }
   return "in_progress";
+}
+
+/** Keeps submission fields plain text while preserving Unicode and line breaks. */
+export function sanitizeAttemptText(value: string): string {
+  return value
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "")
+    .replace(/\r\n?/g, "\n");
 }
 
 export function activityPerformance(

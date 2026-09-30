@@ -50,6 +50,29 @@ revoke all on function public.pfy_current_pfy_user_id() from public, anon;
 grant execute on function public.pfy_current_pfy_user_id() to authenticated;
 
 -- ─── 5.1 Exercise Attempt persistence ───────────────────────────────────────
+-- Plain-text canonicalization preserves Unicode, tabs and line breaks while
+-- removing non-printing control characters. This is not HTML sanitization.
+create or replace function public.pfy_sanitize_attempt_text(p_value text)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  select regexp_replace(
+    regexp_replace(
+      regexp_replace(
+        regexp_replace(coalesce(p_value, ''), E'\\000', '', 'g'),
+        E'[\\001-\\010\\013\\014\\016-\\037\\177]', '', 'g'
+      ),
+      chr(13) || chr(10), chr(10), 'g'
+    ),
+    chr(13), chr(10), 'g'
+  )
+$$;
+
+revoke all on function public.pfy_sanitize_attempt_text(text) from public, anon;
+grant execute on function public.pfy_sanitize_attempt_text(text) to authenticated, service_role;
+
 create table public.exercise_attempts (
   id uuid primary key default gen_random_uuid(),
   exercise_id uuid not null,
@@ -318,7 +341,7 @@ begin
   )
   values (
     p_exercise_id, target_activity_id, caller_id, next_attempt_number,
-    'completed', now(), p_content,
+    'completed', now(), public.pfy_sanitize_attempt_text(p_content),
     current_assessment_mode, current_scoring_policy
   )
   returning * into result;
@@ -411,11 +434,11 @@ grant execute on function public.pfy_apply_h5p_attempt_outcome(
 -- SPEC-006 establishes the Evaluation domain model and this protected
 -- persistence capability ONLY. It grants no general Teacher evaluation
 -- permission (Section 10, Section 11a): this function is reachable
--- exclusively via service_role, and the application's domain layer
--- (src/lib/attempts/evaluation.ts) gates every call behind an authorization
--- check that always denies until SPEC-008 establishes relationship-scoped
--- Teacher authorization. `p_evaluator_user_id` must be supplied by that
--- trusted server-side caller only — never accepted as client input.
+-- exclusively via service_role. This capability remains unavailable to
+-- ordinary authenticated callers until SPEC-008 establishes relationship-
+-- scoped Teacher authorization. Service-role execution is only a persistence
+-- mechanism, not proof that the caller is authorized. `p_evaluator_user_id`
+-- must be supplied by trusted server-side policy context, never client input.
 create or replace function public.pfy_write_exercise_evaluation(
   p_attempt_id uuid,
   p_evaluator_user_id uuid,
@@ -451,7 +474,12 @@ begin
   -- constraint on exercise_evaluations.attempt_id enforces this at the
   -- database layer too.
   insert into public.exercise_evaluations (attempt_id, evaluator_user_id, score, feedback)
-  values (p_attempt_id, p_evaluator_user_id, p_score, coalesce(p_feedback, ''))
+  values (
+    p_attempt_id,
+    p_evaluator_user_id,
+    p_score,
+    public.pfy_sanitize_attempt_text(p_feedback)
+  )
   returning * into result;
 
   return result;
