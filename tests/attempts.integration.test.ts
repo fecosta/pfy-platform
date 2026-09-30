@@ -80,16 +80,34 @@ describe.skipIf(!enabled)("SPEC-006 attempt persistence against local Supabase",
   });
 
   it("allocates monotonic numbers and preserves historical snapshots", async () => {
-    const { exerciseId } = await fixture();
+    const activity = await admin
+      .from("activities")
+      .insert({ title: `Snapshot ${Date.now()}`, lifecycle: "published", access_policy: "free" })
+      .select("id")
+      .single();
+    if (activity.error || !activity.data) throw activity.error ?? new Error("activity failed");
+    activityIds.push(activity.data.id);
+    const exercise = await admin
+      .from("exercises")
+      .insert({
+        activity_id: activity.data.id,
+        title: "Snapshot",
+        assessment_mode: "automatic",
+        scoring_policy: "none",
+      })
+      .select("id")
+      .single();
+    if (exercise.error || !exercise.data) throw exercise.error ?? new Error("exercise failed");
+    const { exerciseId } = { exerciseId: exercise.data.id };
     const first = await learnerA.rpc("pfy_start_exercise_attempt", { p_exercise_id: exerciseId });
     expect(first.error).toBeNull();
     expect(first.data.attempt_number).toBe(1);
     const changed = await admin
       .from("exercises")
-      .update({ assessment_mode: "none", scoring_policy: "none" })
+      .update({ assessment_mode: "automatic", scoring_policy: "required" })
       .eq("id", exerciseId);
     expect(changed.error).toBeNull();
-    const complete = await admin.rpc("pfy_apply_h5p_attempt_outcome", {
+    const rejected = await admin.rpc("pfy_apply_h5p_attempt_outcome", {
       p_attempt_id: first.data.id,
       p_exercise_id: exerciseId,
       p_user_id: pfyUserIds[0],
@@ -100,12 +118,131 @@ describe.skipIf(!enabled)("SPEC-006 attempt persistence against local Supabase",
       p_is_passed: true,
       p_duration_seconds: 1,
     });
-    expect(complete.error).toBeNull();
+    expect(rejected.error).toBeTruthy();
+    expect(
+      (
+        await admin
+          .from("exercise_attempts")
+          .select("status,score_scaled")
+          .eq("id", first.data.id)
+          .single()
+      ).data,
+    ).toMatchObject({ status: "started", score_scaled: null });
     const second = await learnerA.rpc("pfy_start_exercise_attempt", { p_exercise_id: exerciseId });
     expect(second.error).toBeNull();
-    expect(second.data.attempt_number).toBe(2);
+    expect(second.data.attempt_number).toBe(1);
     expect(first.data.assessment_mode_at_attempt).toBe("automatic");
-    expect(second.data.assessment_mode_at_attempt).toBe("none");
+    expect(second.data.scoring_policy_at_attempt).toBe("none");
+
+    const nonScoring = await admin.rpc("pfy_apply_h5p_attempt_outcome", {
+      p_attempt_id: second.data.id,
+      p_exercise_id: exerciseId,
+      p_user_id: pfyUserIds[0],
+      p_is_completed: true,
+      p_score_raw: null,
+      p_score_max: null,
+      p_score_scaled: null,
+      p_is_passed: null,
+      p_duration_seconds: 1,
+    });
+    expect(nonScoring.error).toBeNull();
+    const rejectedCurrentConfig = await admin.rpc("pfy_apply_h5p_attempt_outcome", {
+      p_attempt_id: second.data.id,
+      p_exercise_id: exerciseId,
+      p_user_id: pfyUserIds[0],
+      p_is_completed: true,
+      p_score_raw: 1,
+      p_score_max: 1,
+      p_score_scaled: 1,
+      p_is_passed: true,
+      p_duration_seconds: 1,
+    });
+    expect(rejectedCurrentConfig.error).toBeTruthy();
+
+    const automatic = await admin
+      .from("exercises")
+      .insert({
+        activity_id: first.data.activity_id,
+        title: "Automatic",
+        assessment_mode: "automatic",
+        scoring_policy: "none",
+      })
+      .select("id")
+      .single();
+    if (automatic.error || !automatic.data) throw automatic.error ?? new Error("exercise failed");
+    const automaticAttempt = await learnerA.rpc("pfy_start_exercise_attempt", {
+      p_exercise_id: automatic.data.id,
+    });
+    expect(automaticAttempt.error).toBeNull();
+    const accepted = await admin.rpc("pfy_apply_h5p_attempt_outcome", {
+      p_attempt_id: automaticAttempt.data.id,
+      p_exercise_id: automatic.data.id,
+      p_user_id: pfyUserIds[0],
+      p_is_completed: true,
+      p_score_raw: null,
+      p_score_max: null,
+      p_score_scaled: null,
+      p_is_passed: null,
+      p_duration_seconds: 1,
+    });
+    expect(accepted.error).toBeNull();
+  });
+
+  it("rejects manual and non-scoring H5P outcomes without changing Attempts", async () => {
+    for (const assessmentMode of ["manual", "none"] as const) {
+      const activity = await admin
+        .from("activities")
+        .insert({
+          title: `${assessmentMode} ${Date.now()}`,
+          lifecycle: "published",
+          access_policy: "free",
+        })
+        .select("id")
+        .single();
+      if (activity.error || !activity.data) throw activity.error ?? new Error("activity failed");
+      activityIds.push(activity.data.id);
+      const exercise = await admin
+        .from("exercises")
+        .insert({
+          activity_id: activity.data.id,
+          title: assessmentMode,
+          assessment_mode: assessmentMode,
+          scoring_policy: "none",
+        })
+        .select("id")
+        .single();
+      if (exercise.error || !exercise.data) throw exercise.error ?? new Error("exercise failed");
+      const started =
+        assessmentMode === "manual"
+          ? await learnerA.rpc("pfy_submit_manual_exercise_attempt", {
+              p_exercise_id: exercise.data.id,
+              p_content: "submission",
+            })
+          : await learnerA.rpc("pfy_start_exercise_attempt", { p_exercise_id: exercise.data.id });
+      if (started.error || !started.data) throw started.error ?? new Error("attempt failed");
+      const rejected = await admin.rpc("pfy_apply_h5p_attempt_outcome", {
+        p_attempt_id: started.data.id,
+        p_exercise_id: exercise.data.id,
+        p_user_id: pfyUserIds[0],
+        p_is_completed: true,
+        p_score_raw: null,
+        p_score_max: null,
+        p_score_scaled: null,
+        p_is_passed: null,
+        p_duration_seconds: 1,
+      });
+      expect(rejected.error).toBeTruthy();
+      const unchanged = await admin
+        .from("exercise_attempts")
+        .select("status,completed_at")
+        .eq("id", started.data.id)
+        .single();
+      expect(unchanged.data).toMatchObject(
+        assessmentMode === "manual"
+          ? { status: "completed" }
+          : { status: "started", completed_at: null },
+      );
+    }
   });
 
   it("isolates learner reads and rejects direct mutation", async () => {

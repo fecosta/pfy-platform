@@ -394,6 +394,20 @@ begin
     raise exception using errcode = '42501', message = 'attempt does not match claimed identity';
   end if;
 
+  -- H5P is automatic evidence only. Use the immutable Attempt snapshot rather
+  -- than the Exercise's current configuration.
+  if current_row.assessment_mode_at_attempt <> 'automatic' then
+    raise exception using errcode = '22023', message = 'attempt is not automatic-assessment';
+  end if;
+
+  -- A non-scoring Attempt may complete without result evidence, but accepting
+  -- supplied score/pass values would reinterpret its historical semantics.
+  if current_row.scoring_policy_at_attempt = 'none'
+     and (p_score_raw is not null or p_score_max is not null
+       or p_score_scaled is not null or p_is_passed is not null) then
+    raise exception using errcode = '22023', message = 'attempt does not accept result evidence';
+  end if;
+
   if current_row.status = 'completed' then
     -- Append-only: never overwrite a completed Attempt (Section 5.4, 5.5).
     return current_row;
